@@ -9,7 +9,7 @@ Expires: 3 November 2025
 
 
    OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents
-                         draft-oauth-ai-agents
+                draft-oauth-ai-agents-on-behalf-of-user
 
 Abstract
 
