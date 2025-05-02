@@ -1,0 +1,1789 @@
+<!DOCTYPE html>
+<html lang="en" class="Internet-Draft">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents</title>
+<meta content="Thilina Shashimal Senarath" name="author">
+<meta content="
+       This specification defines an extension to the OAuth 2.0 Authorization Framework   to enable AI agents to obtain delegated access tokens to act on behalf of users. It introduces a new authorization request parameter,  requested_agent , and defines a grant type,  urn:ietf:params:oauth:grant-type:agent-authorization_code , specifically designed to facilitate explicit user consent for an agent's actions and enable the agent to exchange an authorization code for a delegated access token using its own authentication credentials (an agent token). The extension ensures secure delegation, explicit user consent captured at the authorization server, and enhanced auditability through specific token claims that document the delegation path from the user to the agent acting via a client application. 
+    " name="description">
+<meta content="xml2rfc 3.28.1" name="generator">
+<meta content="ai-agents" name="keyword">
+<meta content="authorization" name="keyword">
+<meta content="draft-oauth-ai-agents" name="ietf.draft">
+<!-- Generator version information:
+  xml2rfc 3.28.1
+    Python 3.12.10
+    ConfigArgParse 1.7
+    google-i18n-address 3.1.1
+    intervaltree 3.1.0
+    Jinja2 3.1.6
+    lxml 5.3.0
+    platformdirs 4.3.7
+    pycountry 24.6.1
+    PyYAML 6.0.2
+    requests 2.32.3
+    setuptools 70.3.0
+    wcwidth 0.2.13
+-->
+<link href="draft-oauth-ai-agents.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Lora SemiBold'), local('Lora-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-semibold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-greek.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-greek.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  color-scheme: light dark;
+  --background-color: #fff;
+  --text-color: #222;
+  --title-color: #191919;
+  --link-color: #2a6496;
+  --highlight-color: #f9f9f9;
+  --line-color: #eee;
+  --pilcrow-weak: #ddd;
+  --pilcrow-strong: #bbb;
+  --small-font-size: 14.5px;
+  --font-mono: 'Oxygen Mono', monospace;
+  --font-title: "Sofia Sans Semi Condensed", sans-serif;
+  scrollbar-color: #bbb #eee;
+}
+body {
+  max-width: 600px;
+  margin: 75px auto;
+  padding: 0 5px;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  font: 16px/22px "Lora", serif;
+  scroll-behavior: smooth;
+}
+
+.ears {
+  display: none;
+}
+
+/* headings */
+section {
+  clear: both;
+}
+.section-number {
+  padding-right: 0.5em;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-title);
+  font-weight: 680;
+  margin: 0.8em 0 0.3em;
+  font-size-adjust: 0.5;
+  color: var(--title-color);
+}
+h1#title {
+  font-size: 32px;
+  line-height: 40px;
+  clear: both;
+}
+h1#title, h1#rfcnum {
+  margin: 1.5em 0 0.2em;
+}
+h1#rfcnum + h1#title {
+  margin: 0.2em 0;
+}
+
+h1, h2, h3 {
+  font-size: 22px;
+  line-height: 27px;
+}
+h4, h5, h6 {
+  font-size: 20px;
+  line-height: 24px;
+}
+
+/* general structure */
+.author {
+  padding-bottom: 0.3em;
+  vertical-align: top;
+}
+#abstract+p {
+  font-size: 18px;
+  line-height: 24px;
+}
+#abstract+p code, #abstract+p samp, #abstract+p tt {
+  font-size: 16px;
+  line-height: 0;
+}
+
+p {
+  padding: 0;
+  margin: 0.5em 0;
+  text-align: left;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+/* font-family isn't space-separated, but =~ will have to do */
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  border: none;
+  /* this isn't optimal, but it's an existence proof.  PrinceXML doesn't
+     support flexbox yet.
+  */
+  display: table;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 0.5em 2em;
+  & :is(ol, ul) {
+    margin-left: 1em;
+  }
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+  & li {
+    margin-top: 0.5em;
+  }
+}
+:is(ul, ol).compact, .ulCompact, .olCompact {
+  margin: 0 0 0 2em;
+  & li {
+    margin: 0;
+    & :first-child { margin-top: 0; }
+    & :last-child { margin-bottom: 0; }
+  }
+}
+
+/* definition lists */
+dl {
+  clear: left;
+  --indent: 3ch;
+  /* --indent: attr(indent ch); not supported in any browser, but we can dream */
+  &.olPercent {
+    --indent: 5ch;
+    & > dt {
+      min-width: calc(var(--indent) - 2ch);
+    }
+  }
+  &.olPercent > dt {
+    float: none;
+  }
+
+  dl > dd > & {
+    margin-top: 0.5em;
+    margin-bottom: 0;
+  }
+}
+dl:not(.dlNewline) > dt {
+  float: left;
+  margin-right: 2ch;
+  min-width: 8ch;
+}
+dl > dd {
+  margin-bottom: .8em;
+  margin-left: var(--indent) !important; /* stupid element overrides */
+  min-height: 2ex;
+}
+:is(dl.compact, .dlCompact) > dd {
+  margin-bottom: 0;
+  & > :is(:first-child, .break:first-child + *) {
+    margin-top: 0;
+  }
+  & > :is(:last-child) {
+    margin-bottom: 0;
+  }
+}
+:is(dd, span).break {
+  display: none;
+}
+
+/* links */
+a, a[href].selfRef:hover {
+  text-decoration: none;
+}
+a[href] {
+  color: var(--link-color);
+}
+a[href].selfRef, .iref + a[href].internal {
+  color: var(--text-color);
+}
+a[href]:hover {
+  text-decoration: underline;
+}
+a[href].selfRef:hover {
+  background-color: var(--highlight-color);
+}
+a.xref:is(.cite, .auto), :is(#status-of-memo, #copyright) a {
+  white-space: nowrap;
+}
+
+/* Figures */
+tt, code, pre {
+  background-color: var(--highlight-color);
+  font: 14px/22px var(--font-mono);
+}
+tt, code {
+  /* changing the font for inline elements leads to different ascender
+     and descender heights; as we want to retain baseline alignment,
+     remove leading to avoid altering the final height of lines
+     note: this fails if these blocks take an entire line,
+     a different solution would be great */
+  line-height: 0;
+}
+:is(h1, h2, h3, h4, h5, h6) :is(tt, code) {
+  font-size: 84%;
+}
+pre {
+  border: 1px solid var(--line-color);
+  font-size: 13.5px;
+  line-height: 16px;
+  letter-spacing: -0.2px;
+  margin: 5px;
+  padding: 5px;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0.5em 0;
+  padding: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption, caption {
+  font-style: italic;
+  margin: 0.5em 1.5em;
+  text-align: left;
+  caption-side: bottom;
+}
+@media screen {
+  /* Auto-collapse boilerplate. */
+  :is(#status-of-memo, #copyright) p {
+    margin: -2px 0;
+    max-height: 0;
+    transition: max-height 2s ease, margin 0.5s ease 0.5s;
+    overflow: hidden;
+  }
+  :is(#status-of-memo, #copyright):hover p,
+  :is(#status-of-memo, #copyright) h2:target ~ p {
+    margin: 0.5em 0;
+    max-height: 500px;
+    overflow: auto;
+  }
+  pre, svg {
+    display: inline-block;
+    /* In the horizontal direction, sometimes people make over-sized figures.
+       Scrollbars for those is therefore necessary: auto adds them as necessary..
+       In the vertical direction, the line-height can combine with the font
+       asender/descender height to produce scrollbars: hidden avoids that. */
+    overflow: auto hidden;
+  }
+  pre {
+    max-width: 100%;
+    width: calc(100% - 22px - 1em);
+  }
+  svg {
+    max-width: calc(100% - 22px - 1em);
+  }
+  figure pre {
+    display: block;
+    width: calc(100% - 25px);
+  }
+  :is(pre, svg) + .pilcrow {
+    display: inline-block;
+    vertical-align: text-bottom;
+    padding-bottom: 8px;
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 0 2em;
+  font-style: italic;
+}
+blockquote {
+  margin: 1em 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+
+/* tables */
+table {
+  width: auto;
+  max-width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+}
+table.right {
+  margin-left: auto;
+}
+table.center {
+  margin-left: auto;
+  margin-right: auto;
+}
+table.left {
+  margin-right: auto;
+}
+table .text-left {
+  text-align: left;
+}
+table .text-center {
+  text-align: center;
+}
+table .text-right {
+  text-align: right;
+}
+
+thead, tbody {
+  border: 1px solid var(--line-color);
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 5px 10px;
+}
+th {
+  background-color: var(--line-color);
+}
+:is(tr:nth-child(2n), thead+tbody > tr:nth-child(2n+1)) > td {
+  background-color: var(--background-color);
+}
+:is(tr:nth-child(2n+1), thead+tbody > tr:nth-child(2n)) > td {
+  background-color: var(--highlight-color);
+}
+table caption {
+  margin: 0;
+  padding: 3px 0 3px 1em;
+}
+table p {
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  margin-left: 3px;
+  opacity: 0.2;
+  user-select: none;
+  &[href] {
+    color: var(--pilcrow-weak);
+    &:hover { text-decoration: none; }
+  }
+}
+@media not print {
+  :hover > a.pilcrow {
+    opacity: 1;
+  }
+  a.pilcrow[href]:hover {
+    color: var(--pilcrow-strong);
+    background-color: transparent;
+  }
+}
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid var(--line-color);
+}
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: 600;
+  font-size: var(--small-font-size);
+}
+.role {
+  font-variant: all-small-caps;
+}
+sub, sup {
+  line-height: 1;
+  font-size: 80%;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: var(--small-font-size);
+  line-height: 18px;
+  --identifier-width: 15ch;
+  & dt {
+    width: var(--identifier-width);
+    min-width: var(--identifier-width);
+    clear: left;
+    float: left;
+    text-align: right;
+    margin-right: 1ch;
+  }
+  & dd {
+    margin: 0;
+    margin-left: calc(1em + var(--identifier-width)) !important;
+    min-width: 5em;
+  }
+  & .authors {
+    & .author {
+      display: inline-block;
+      margin-right: 1.5em;
+    }
+    & .org {
+      font-style: italic;
+    }
+  }
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #999;
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+
+  & nav {
+    & ul {
+      margin: 0 0.5em 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    & li {
+      line-height: 1.3em;
+      margin: 2px 0;
+      padding-left: 1.2em;
+      text-indent: -1.2em;
+    }
+  }
+  & a.xref {
+    white-space: normal;
+  }
+}
+
+.references {
+  & > dt {
+    text-align: right;
+    font-weight: bold;
+    min-width: 10ch;
+    margin-right: 1.5ch;
+    &:target::before {
+      content: "⇒";
+      margin: 0 10px 0 -25px;
+    }
+  }
+  & > dd {
+    margin-left: 12ch !important;
+    overflow: visible;
+    & .refInstance {
+      margin-bottom: 0.8em;
+    }
+    & .ascii {
+      margin-bottom: 0.25em;
+    }
+  }
+}
+
+#rfc\.index\.index + ul {
+  margin-left: 0;
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  max-width: 20em;
+  margin: 1em auto 1em 0;
+
+  & .nameRole {
+    font-weight: 700;
+    margin-left: 0;
+  }
+  & .label {
+    margin: 0.5em 0;
+  }
+  & .type {
+    display: none;
+  }
+  & .alternative-contact {
+    margin: 0.5em 0 0.25em 0;
+  }
+  & .non-ascii {
+    margin: 0 0 0 2em;
+  }
+  & div.left {
+    text-align: left;
+  }
+  & div.right {
+    text-align: right;
+  }
+}
+
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+@media (min-width: 500px) {
+  #authors-addresses > section {
+    column-count: 2;
+    column-gap: 20px;
+  }
+  #authors-addresses > section > h2 {
+    column-span: all;
+  }
+  /* hack for break-inside: avoid-column */
+  #authors-addresses address {
+    display: inline-block;
+    break-inside: avoid-column;
+  }
+}
+
+/* Comments */
+.rfcEditorRemove p:first-of-type {
+  font-style: italic;
+}
+.cref {
+  background-color: rgba(249, 232, 105, 0.3);
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+
+@media screen {
+  #toc nav {
+    font-family: var(--font-title);
+    font-weight: 360;
+    & > ul { margin-bottom: 2em; }
+    & ul {
+      margin: 0 0 0 4px;
+      & :is(p, li) {
+        margin: 2px 0;
+      }
+    }
+  }
+  #toc a.toplink {
+    float: right;
+  }
+}
+@media not screen {
+  #toc a.toplink {
+    display: none;
+  }
+}
+
+
+/* TOC layout for smaller screens */
+@media screen and (max-width: 929px) {
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 1px 0 0 0;
+    margin: 0;
+    border-bottom: 1px solid #ccc;
+    opacity: 0.6;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 2px 0 2px 6px;
+    padding-right: 1em;
+    font-size: 18px;
+    line-height: 24px;
+    min-width: 190px;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+    &::before { /* css hamburger */
+      float: right;
+      position: relative;
+      width: 1em;
+      height: 1px;
+      left: -164px;
+      margin: 8px 0 0 0;
+      background: white none repeat scroll 0 0;
+      box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+      content: "";
+    }
+  }
+  #toc nav {
+    display: none;
+    background-color: var(--background-color);
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+  #toc.active {
+    opacity: 1;
+    & nav { display: block; }
+  }
+  /* Make the collapsed ToC header render white on gray also when it's a link */
+  #toc h2 a,
+  #toc h2 a:is(:link, :focus, :hover),
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+  #toc a.toplink {
+    margin: 2px 0.5em 0;
+  }
+}
+
+/* TOC layout for wide screens */
+@media screen and (min-width: 930px) {
+  body {
+    padding-right: 360px;
+    padding-right: calc(min(180px + 20%, 500px));
+  }
+  #toc {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    right: calc(50vw - 480px);
+    width: 312px;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 2em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+  #toc a.toplink {
+    margin: 8px 0.5em 0;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre, .vcard {
+    page-break-inside: avoid;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  :is(h2, h3, h4, h5, h6)+*, dd {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+}
+
+/* Dark mode. */
+@media (prefers-color-scheme: dark) {
+:root {
+  --background-color: #121212;
+  --text-color: #f0f0f0;
+  --title-color: #fff;
+  --link-color: #4da4f0;
+  --highlight-color: #282828;
+  --line-color: #444;
+  --pilcrow-weak: #444;
+  --pilcrow-strong: #666;
+  scrollbar-color: #777 #333;
+}
+}
+
+/* SVG Trick: a prefix match works because only black and white are allowed */
+svg :is([stroke="black"], [stroke^="#000"]) {
+  stroke: var(--text-color);
+}
+svg :is([stroke="white"], [stroke^="#fff"]) {
+  stroke: var(--background-color);
+}
+svg :is([fill="black"], [fill^="#000"], :not([fill])) {
+  fill: var(--text-color);
+}
+svg :is([fill="white"], [fill^="#fff"]) {
+  fill: var(--background-color);
+}
+</style>
+
+</head>
+<body class="xml2rfc">
+<table class="ears">
+<thead><tr>
+<td class="left">Internet-Draft</td>
+<td class="center">OAuth 2.0 Extension: On-Behalf-Of User A</td>
+<td class="right">May 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Senarath</td>
+<td class="center">Expires 3 November 2025</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-workgroup">Workgroup:</dt>
+<dd class="workgroup">Network Working Group</dd>
+<dt class="label-internet-draft">Internet-Draft:</dt>
+<dd class="internet-draft">draft-oauth-ai-agents</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-05-02" class="published">2 May 2025</time>
+    </dd>
+<dt class="label-intended-status">Intended Status:</dt>
+<dd class="intended-status">Informational</dd>
+<dt class="label-expires">Expires:</dt>
+<dd class="expires"><time datetime="2025-11-03">3 November 2025</time></dd>
+<dt class="label-authors">Author:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">T. S. Senarath</div>
+<div class="org">WSO2</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="title">OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This specification defines an extension to the OAuth 2.0 Authorization Framework <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span> to enable AI agents to obtain delegated access tokens to act on behalf of users. It introduces a new authorization request parameter, <code>requested_agent</code>, and defines a grant type, <code>urn:ietf:params:oauth:grant-type:agent-authorization_code</code>, specifically designed to facilitate explicit user consent for an agent's actions and enable the agent to exchange an authorization code for a delegated access token using its own authentication credentials (an agent token). The extension ensures secure delegation, explicit user consent captured at the authorization server, and enhanced auditability through specific token claims that document the delegation path from the user to the agent acting via a client application.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+        This Internet-Draft is submitted in full conformance with the
+        provisions of BCP 78 and BCP 79.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+        Internet-Drafts are working documents of the Internet Engineering Task
+        Force (IETF). Note that other groups may also distribute working
+        documents as Internet-Drafts. The list of current Internet-Drafts is
+        at <span><a href="https://datatracker.ietf.org/drafts/current/">https://datatracker.ietf.org/drafts/current/</a></span>.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+        Internet-Drafts are draft documents valid for a maximum of six months
+        and may be updated, replaced, or obsoleted by other documents at any
+        time. It is inappropriate to use Internet-Drafts as reference
+        material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-4">
+        This Internet-Draft will expire on 3 November 2025.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1" class="keepWithNext"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-preconditions" class="internal xref">Preconditions</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-protocol-overview" class="internal xref">Protocol Overview</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-high-level-overview" class="internal xref">High-Level Overview</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-sequence-diagram" class="internal xref">Sequence Diagram</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-detailed-protocol-steps" class="internal xref">Detailed Protocol Steps</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-user-authorization-request" class="internal xref">User Authorization Request</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.1">
+                    <p id="section-toc.1-1.5.2.1.2.1.1"><a href="#section-5.1.1" class="auto internal xref">5.1.1</a>.  <a href="#name-parameters" class="internal xref">Parameters</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.2">
+                    <p id="section-toc.1-1.5.2.1.2.2.1"><a href="#section-5.1.2" class="auto internal xref">5.1.2</a>.  <a href="#name-authorization-server-proces" class="internal xref">Authorization Server Processing</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3">
+                    <p id="section-toc.1-1.5.2.1.2.3.1"><a href="#section-5.1.3" class="auto internal xref">5.1.3</a>.  <a href="#name-authorization-code-response" class="internal xref">Authorization Code Response</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.4">
+                    <p id="section-toc.1-1.5.2.1.2.4.1"><a href="#section-5.1.4" class="auto internal xref">5.1.4</a>.  <a href="#name-error-response" class="internal xref">Error Response</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-delegated-access-token-requ" class="internal xref">Delegated Access Token Request</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.1">
+                    <p id="section-toc.1-1.5.2.2.2.1.1"><a href="#section-5.2.1" class="auto internal xref">5.2.1</a>.  <a href="#name-parameters-3" class="internal xref">Parameters</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.2">
+                    <p id="section-toc.1-1.5.2.2.2.2.1"><a href="#section-5.2.2" class="auto internal xref">5.2.2</a>.  <a href="#name-authorization-server-process" class="internal xref">Authorization Server Processing</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.3">
+                    <p id="section-toc.1-1.5.2.2.2.3.1"><a href="#section-5.2.3" class="auto internal xref">5.2.3</a>.  <a href="#name-delegated-access-token-resp" class="internal xref">Delegated Access Token Response</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.4">
+                    <p id="section-toc.1-1.5.2.2.2.4.1"><a href="#section-5.2.4" class="auto internal xref">5.2.4</a>.  <a href="#name-error-response-2" class="internal xref">Error Response</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-delegated-access-token-stru" class="internal xref">Delegated Access Token Structure and Claims</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">AI agents are increasingly integrated into systems to perform tasks on behalf of users. These agents often require access to protected resources, necessitating a robust and secure authorization mechanism that accurately reflects the user's intent and the agent's role in the access request. Standard OAuth 2.0 flows, such as the Authorization Code Grant <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span> and the Client Credentials Grant <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>, do not fully address the nuances of agent delegation where explicit user consent for a specific agent's action is required and the agent itself acts as a distinct identity in the token exchange process. While the OAuth 2.0 Token Exchange specification <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> provides a mechanism for exchanging tokens, it typically focuses on inter-service communication or impersonation flows initiated server-side and doesn't inherently provide a mechanism for obtaining explicit user consent for an agent via the front channel initiated from the authorization endpoint.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">This specification extends OAuth 2.0 to specifically support scenarios where a user delegates authority to an AI agent. It leverages the existing Authorization Code Grant flow by introducing mechanisms at the authorization endpoint to identify the specific agent for which delegation is sought and by defining a new grant type for the token endpoint that allows the agent to authenticate itself while presenting the user-approved authorization code. The resulting delegated access token explicitly records the identity of the user, the agent, and the client application involved, facilitating clear audit trails.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals, as shown here.<a href="#section-1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="terminology">
+<section id="section-2">
+      <h2 id="name-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<p id="section-2-1">This specification uses the following terms:<a href="#section-2-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-2-2">
+        <dt id="section-2-2.1">Agent:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.2">
+          <p id="section-2-2.2.1">An autonomous software entity that acts on behalf of a user. An agent has a distinct identity and authentication credentials separate from the client application that might host or invoke it.<a href="#section-2-2.2.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.3">Agent Token:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.4">
+          <p id="section-2-2.4.1">A security token (e.g., a JWT <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>]</span>) used by an agent to authenticate itself to the authorization server or resource servers. The sub claim of an agent token identifies the agent.<a href="#section-2-2.4.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.5">Delegated Access Token:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.6">
+          <p id="section-2-2.6.1">An access token issued by the authorization server to an agent, granting it permission to access protected resources on behalf of a specific user. This token explicitly documents the delegation path.<a href="#section-2-2.6.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.7">User:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.8">
+          <p id="section-2-2.8.1">The resource owner who grants consent for an agent to access their protected resources.<a href="#section-2-2.8.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.9">Client:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.10">
+          <p id="section-2-2.10.1">An application that initiates the authorization flow and facilitates the interaction between the user, agent, and authorization server. This is the "client" as defined in OAuth 2.0 <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>.<a href="#section-2-2.10.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.11">Authorization Server:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.12">
+          <p id="section-2-2.12.1">The server that issues access tokens to the client and agent after successfully authenticating a resource owner and obtaining authorization.<a href="#section-2-2.12.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.13">Resource Server:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.14">
+          <p id="section-2-2.14.1">The server hosting the protected resources, capable of accepting and validating delegated access tokens. Resource server can be a model context protocol (MCP) server, another agent or genaric protected resource.<a href="#section-2-2.14.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.15">Authorization Code:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.16">
+          <p id="section-2-2.16.1">A temporary, single-use code issued by the authorization server to the client's redirect URI after the user has authenticated and granted consent for a specific agent to act on their behalf. This code is then provided to the agent.<a href="#section-2-2.16.1" class="pilcrow">¶</a></p>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="preconditions">
+<section id="section-3">
+      <h2 id="name-preconditions">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-preconditions" class="section-name selfRef">Preconditions</a>
+      </h2>
+<p id="section-3-1">The agent holds a valid agent token, obtained via a separate process, which is not covered in this document. The agent token is used to authenticate the agent and authorize it to perform actions on its own behalf.<a href="#section-3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="protocol-overview">
+<section id="section-4">
+      <h2 id="name-protocol-overview">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-protocol-overview" class="section-name selfRef">Protocol Overview</a>
+      </h2>
+<p id="section-4-1">This extension defines a flow where a client application facilitates user consent for an agent, and the agent then uses this consent along with its own authentication to obtain a delegated access token.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<div id="high-level-overview">
+<section id="section-4.1">
+        <h3 id="name-high-level-overview">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-high-level-overview" class="section-name selfRef">High-Level Overview</a>
+        </h3>
+<ol start="1" type="1" class="normal type-1" id="section-4.1-1">
+<li id="section-4.1-1.1">
+            <p id="section-4.1-1.1.1">The client application initiates the flow by directing the user's user-agent to the Authorization Server's authorization endpoint, including a requested_agent parameter identifying the agent.<a href="#section-4.1-1.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.1-1.2">
+            <p id="section-4.1-1.2.1">The Authorization Server authenticates the user and presents a consent screen detailing the client, the requested agent, and the scopes.
+Upon user consent, the Authorization Server issues a short-lived Authorization Code tied to the user, client, and agent, and redirects the user-agent back to the client's redirect_uri.<a href="#section-4.1-1.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.1-1.3">
+            <p id="section-4.1-1.3.1">The client receives the Authorization Code (via the user-agent redirect). The client then typically passes this code to the agent.<a href="#section-4.1-1.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.1-1.4">
+            <p id="section-4.1-1.4.1">The agent requests a Delegated Access Token from the Authorization Server's token endpoint using the new <code>urn:ietf:params:oauth:grant-type:agent-authorization_code</code> grant type. This request includes the Authorization Code, the PKCE code_verifier, and the agent token.<a href="#section-4.1-1.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.1-1.5">
+            <p id="section-4.1-1.5.1">The Authorization Server validates the request, including verifying the Authorization Code, the PKCE code_verifier, and the Agent Token. It ensures the Agent Token corresponds to the requested_agent approved by the user.<a href="#section-4.1-1.5.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.1-1.6">
+            <p id="section-4.1-1.6.1">Upon successful validation, the Authorization Server issues a Delegated Access Token to the agent. This token is typically a JWT containing claims identifying the user (sub), the client (azp), and the agent (act claim).<a href="#section-4.1-1.6.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+<div id="sequence-diagram">
+<section id="section-4.2">
+        <h3 id="name-sequence-diagram">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-sequence-diagram" class="section-name selfRef">Sequence Diagram</a>
+        </h3>
+<div class="alignLeft art-ascii-art art-text artwork" id="section-4.2-1">
+<pre>
++------------+          +--------+        +--------+        +--------------------+        +----------------+
+| User-Agent |          | Client |        | Agent  |        | Authorization      |        | Resource       |
+|            |          |        |        |        |        | Server             |        | Server         |
++------------+          +--------+        +--------+        +--------------------+        +----------------+
+       |                     |                 |                       |                          |
+       |                     |       (A) Need to act on behalf of user |                          |
+       |                     |&lt;----------------|                       |                          |
+       |                     |                 |                       |                          |
+           (B) Open browser with authorization url + code challenge + requested_agent             |
+       |&lt;--------------------|                 |                       |                          |
+       |                     |                 |                       |                          |
+       |   (C) Request to authorization endpoint                       |                          |
+       |--------------------------------------------------------------&gt;|                          |
+       |                     |                 |                       |                          |
+       |   (D) User authenticates and consents (show agent + scopes)   |                          |
+       |&lt;-------------------------------------------------------------&gt;|                          |
+       |                     |                 |                       |                          |
+       |   (E) Redirect with Authorization Code                        |                          |
+       |&lt;--------------------------------------------------------------|                          |
+       |                     |                 |                       |                          |
+       |   (F) Authorization Code              |                       |                          |
+       |--------------------&gt;|                 |                       |                          |
+       |                     |   (G) POST /token (code + verifier + agent token)                  |
+       |                     |----------------------------------------&gt;|                          |
+       |                     |                 |                       |                          |
+       |                     |   (H) Delegated Access Token (JWT)      |                          |
+       |                     |&lt;----------------------------------------|                          |
+       |                     |                                         |                          |
+       |                     |   (I) Access Resource with Delegated Access Token                  |
+       |                     |-------------------------------------------------------------------&gt;|
+       |                     |                 |                       |(J) JWKS Token validation |
+       |                     |                 |                       |&lt;-------------------------|
+       |                     |                 |                       |                          |
+       |                     |       (K) Protected Resource Response   |                          |
+       |                     |&lt;-------------------------------------------------------------------|
+       |                     |                 |                       |                          |
+       |                     |   (L) Response with Resource Data       |                          |
+       |                     |----------------&gt;|                       |                          |
+</pre><a href="#section-4.2-1" class="pilcrow">¶</a>
+</div>
+<p id="section-4.2-2">The steps in the sequence diagram are as follows:<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2-3">A. Agent requests to access protected resources on behalf of the user.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2-4">B. Client initiates Authorization Request via user-agent, including requested_agent and PKCE challenge.<a href="#section-4.2-4" class="pilcrow">¶</a></p>
+<p id="section-4.2-5">C. User-agent is redirected to the Authorization Server's authorization endpoint.<a href="#section-4.2-5" class="pilcrow">¶</a></p>
+<p id="section-4.2-6">D. User authenticates and grants consent for the specific agent and requested scopes at the Authorization Server.<a href="#section-4.2-6" class="pilcrow">¶</a></p>
+<p id="section-4.2-7">E. Authorization Server issues Authorization Code and redirects user-agent back to client.<a href="#section-4.2-7" class="pilcrow">¶</a></p>
+<p id="section-4.2-8">F. Client receives the code.<a href="#section-4.2-8" class="pilcrow">¶</a></p>
+<p id="section-4.2-9">G. Client requests Delegated Access Token using the <code>urn:ietf:params:oauth:grant-type:agent-authorization_code</code> grant type, presenting the code, PKCE verifier, and its Agent Token.<a href="#section-4.2-9" class="pilcrow">¶</a></p>
+<p id="section-4.2-10">H. Authorization Server validates the request (code, verifier, and agent token) and issues the Delegated Access Token.<a href="#section-4.2-10" class="pilcrow">¶</a></p>
+<p id="section-4.2-11">I. Client accesses protected resources using the Delegated Access Token.<a href="#section-4.2-11" class="pilcrow">¶</a></p>
+<p id="section-4.2-12">J. Resource Server validates the token (e.g., by verifying the signature and claims offline).<a href="#section-4.2-12" class="pilcrow">¶</a></p>
+<p id="section-4.2-13">K. Resource Server processes the request and returns the requested resource.<a href="#section-4.2-13" class="pilcrow">¶</a></p>
+<p id="section-4.2-14">L. Agent receives the resource data.<a href="#section-4.2-14" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="detailed-protocol-steps">
+<section id="section-5">
+      <h2 id="name-detailed-protocol-steps">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-detailed-protocol-steps" class="section-name selfRef">Detailed Protocol Steps</a>
+      </h2>
+<div id="user-authorization-request">
+<section id="section-5.1">
+        <h3 id="name-user-authorization-request">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-user-authorization-request" class="section-name selfRef">User Authorization Request</a>
+        </h3>
+<p id="section-5.1-1">The client initiates the flow by directing the user's user-agent to the authorization server's authorization endpoint. This request is an extension of the standard Authorization Code Grant request (Section 4.1.1 of <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>) and SHOULD include the <code>requested_agent</code> parameter.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.1-2">
+<pre>
+GET /authorize?response_type=code&amp;
+client_id=&lt;client_id&gt;&amp;
+redirect_uri=&lt;redirect_uri&gt;&amp;
+scope=&lt;scope&gt;&amp;
+state=&lt;state&gt;&amp;
+code_challenge=&lt;code_challenge&gt;&amp;
+code_challenge_method=S256&amp;
+requested_agent=&lt;agent_id&gt; HTTP/1.1
+</pre><a href="#section-5.1-2" class="pilcrow">¶</a>
+</div>
+<div id="parameters">
+<section id="section-5.1.1">
+          <h4 id="name-parameters">
+<a href="#section-5.1.1" class="section-number selfRef">5.1.1. </a><a href="#name-parameters" class="section-name selfRef">Parameters</a>
+          </h4>
+<span class="break"></span><dl class="dlParallel" id="section-5.1.1-1">
+            <dt id="section-5.1.1-1.1">requested_agent:</dt>
+            <dd style="margin-left: 1.5em" id="section-5.1.1-1.2">
+              <p id="section-5.1.1-1.2.1">REQUIRED. The unique identifier of the agent for which the client is requesting delegated access on behalf of the user. This identifier MUST uniquely identify the agent within the system and MUST be understood by the Authorization Server.<a href="#section-5.1.1-1.2.1" class="pilcrow">¶</a></p>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-5.1.1-1.3">other parameters:</dt>
+            <dd style="margin-left: 1.5em" id="section-5.1.1-1.4">
+              <p id="section-5.1.1-1.4.1">The request MUST also include the standard OAuth 2.0 parameters such as <code>response_type</code>, <code>client_id</code>, <code>redirect_uri</code>, <code>scope</code>, <code>state</code>, and PKCE parameters (<code>code_challenge</code> and <code>code_challenge_method</code>).<a href="#section-5.1.1-1.4.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="authorization-server-processing">
+<section id="section-5.1.2">
+          <h4 id="name-authorization-server-proces">
+<a href="#section-5.1.2" class="section-number selfRef">5.1.2. </a><a href="#name-authorization-server-proces" class="section-name selfRef">Authorization Server Processing</a>
+          </h4>
+<p id="section-5.1.2-1">Upon receiving the authorization request, the Authorization Server MUST perform the following steps:<a href="#section-5.1.2-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5.1.2-2">
+<li id="section-5.1.2-2.1">
+              <p id="section-5.1.2-2.1.1">Validate the request parameters according to the OAuth 2.0 Authorization Code Grant (Section 4.1.1 of <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>).<a href="#section-5.1.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-5.1.2-2.2">
+              <p id="section-5.1.2-2.2.1">Validate the <code>requested_agent</code>. The Authorization Server MUST verify that the provided requested_agent corresponds to a recognized agent identity. The nature of this verification is outside the scope of this document but might involve checking an internal registry of agents.<a href="#section-5.1.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-5.1.2-2.3">
+              <p id="section-5.1.2-2.3.1">Authroization server MAY Display a consent screen to the User. This screen SHOULD clearly indicate:<a href="#section-5.1.2-2.3.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.1.2-2.3.2.1">
+                  <p id="section-5.1.2-2.3.2.1.1">The name or identity of the client application initiating the request.<a href="#section-5.1.2-2.3.2.1.1" class="pilcrow">¶</a></p>
+</li>
+                <li class="normal" id="section-5.1.2-2.3.2.2">
+                  <p id="section-5.1.2-2.3.2.2.1">The identity of the agent (requested_agent) for which delegation is being requested.<a href="#section-5.1.2-2.3.2.2.1" class="pilcrow">¶</a></p>
+</li>
+                <li class="normal" id="section-5.1.2-2.3.2.3">
+                  <p id="section-5.1.2-2.3.2.3.1">The specific scopes of access being requested.<a href="#section-5.1.2-2.3.2.3.1" class="pilcrow">¶</a></p>
+</li>
+              </ul>
+</li>
+          </ol>
+<p id="section-5.1.2-3">If the request is valid and the user grants consent, the Authorization Server proceeds to issue an Authorization Code. If the request is invalid, the Authorization Server returns an Error Response.<a href="#section-5.1.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authorization-code-response">
+<section id="section-5.1.3">
+          <h4 id="name-authorization-code-response">
+<a href="#section-5.1.3" class="section-number selfRef">5.1.3. </a><a href="#name-authorization-code-response" class="section-name selfRef">Authorization Code Response</a>
+          </h4>
+<p id="section-5.1.3-1">If the user grants consent, the Authorization Server issues an Authorization Code and redirects the user-agent back to the client's redirect_uri (if provided in the request) or a pre-registered redirect URI.<a href="#section-5.1.3-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.1.3-2">
+<pre>
+HTTP/1.1 302 Found
+Location: &lt;redirect_uri&gt;?code=&lt;authorization_code&gt;&amp;state=&lt;state&gt;
+</pre><a href="#section-5.1.3-2" class="pilcrow">¶</a>
+</div>
+<div id="parameters-1">
+<section id="section-5.1.3.1">
+            <h5 id="name-parameters-2">
+<a href="#section-5.1.3.1" class="section-number selfRef">5.1.3.1. </a><a href="#name-parameters-2" class="section-name selfRef">Parameters</a>
+            </h5>
+<p id="section-5.1.3.1-1">Similar to the standard Authorization Code Grant (Section 4.1.2 of <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>), the response includes:<a href="#section-5.1.3.1-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5.1.3.1-2">
+              <dt id="section-5.1.3.1-2.1">code:</dt>
+              <dd style="margin-left: 1.5em" id="section-5.1.3.1-2.2">
+                <p id="section-5.1.3.1-2.2.1">REQUIRED. The Authorization Code issued by the Authorization Server. This code is a short-lived, single-use code that the client will pass to the agent.<a href="#section-5.1.3.1-2.2.1" class="pilcrow">¶</a></p>
+</dd>
+              <dd class="break"></dd>
+<dt id="section-5.1.3.1-2.3">state:</dt>
+              <dd style="margin-left: 1.5em" id="section-5.1.3.1-2.4">
+                <p id="section-5.1.3.1-2.4.1">OPTIONAL. The state parameter passed in the initial request, if present. This value MUST be included in the redirect URI to maintain state between the request and callback.<a href="#section-5.1.3.1-2.4.1" class="pilcrow">¶</a></p>
+</dd>
+            <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="error-response">
+<section id="section-5.1.4">
+          <h4 id="name-error-response">
+<a href="#section-5.1.4" class="section-number selfRef">5.1.4. </a><a href="#name-error-response" class="section-name selfRef">Error Response</a>
+          </h4>
+<p id="section-5.1.4-1">If the request fails, the Authorization Server redirects the user-agent back to the client's redirect_uri with error parameters.<a href="#section-5.1.4-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.1.4-2">
+<pre>
+HTTP/1.1 302 Found
+Location: &lt;redirect_uri&gt;?error=&lt;error_code&gt;&amp;state=&lt;state&gt;
+</pre><a href="#section-5.1.4-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="delegated-access-token-request">
+<section id="section-5.2">
+        <h3 id="name-delegated-access-token-requ">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-delegated-access-token-requ" class="section-name selfRef">Delegated Access Token Request</a>
+        </h3>
+<p id="section-5.2-1">Upon receiving the Authorization Code, the client then requests a Delegated Access Token from the Authorization Server's token endpoint using the <code>urn:ietf:params:oauth:grant-type:agent-authorization_code</code> grant type.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.2-2">
+<pre>
+POST /token HTTP/1.1
+Host: authorization-server.com
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=urn:ietf:params:oauth:grant-type:agent-authorization_code&amp;
+client_id=&lt;client_id&gt;&amp;
+code=&lt;authorization_code&gt;&amp;
+code_verifier=&lt;code_verifier&gt;&amp;
+redirect_uri=&lt;redirect_uri&gt;&amp;
+agent_token=&lt;agent_token&gt;
+</pre><a href="#section-5.2-2" class="pilcrow">¶</a>
+</div>
+<div id="parameters-2">
+<section id="section-5.2.1">
+          <h4 id="name-parameters-3">
+<a href="#section-5.2.1" class="section-number selfRef">5.2.1. </a><a href="#name-parameters-3" class="section-name selfRef">Parameters</a>
+          </h4>
+<span class="break"></span><dl class="dlParallel" id="section-5.2.1-1">
+            <dt id="section-5.2.1-1.1">agent_token:</dt>
+            <dd style="margin-left: 1.5em" id="section-5.2.1-1.2">
+              <p id="section-5.2.1-1.2.1">REQUIRED. The agent token used to authenticate the agent. This token MUST be a valid token issued to the agent and MUST include the sub claim identifying the agent.<a href="#section-5.2.1-1.2.1" class="pilcrow">¶</a></p>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-5.2.1-1.3">other parameters:</dt>
+            <dd style="margin-left: 1.5em" id="section-5.2.1-1.4">
+              <p id="section-5.2.1-1.4.1">The request MUST also include the standard OAuth 2.0 parameters such as <code>client_id</code>, <code>code</code>, <code>code_verifier</code>, and <code>redirect_uri</code>.<a href="#section-5.2.1-1.4.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="authorization-server-processing-1">
+<section id="section-5.2.2">
+          <h4 id="name-authorization-server-process">
+<a href="#section-5.2.2" class="section-number selfRef">5.2.2. </a><a href="#name-authorization-server-process" class="section-name selfRef">Authorization Server Processing</a>
+          </h4>
+<p id="section-5.2.2-1">Upon receiving the token request, the Authorization Server MUST perform the following steps:<a href="#section-5.2.2-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5.2.2-2">
+<li id="section-5.2.2-2.1">
+              <p id="section-5.2.2-2.1.1">Validate the request parameters according to the OAuth 2.0 Token Endpoint (Section 4.1.3 of <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>).<a href="#section-5.2.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-5.2.2-2.2">
+              <p id="section-5.2.2-2.2.1">The Authorization Server MUST verify that the agent token is valid, not expired.<a href="#section-5.2.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-5.2.2-2.3">
+              <p id="section-5.2.2-2.3.1">Verify that the authenticated agent identity (obtained from the Agent Token's sub claim) matches the requested_agent value that the user consented to during the initial Authorization Request and which is associated with the code.<a href="#section-5.2.2-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          </ol>
+<p id="section-5.2.2-3">If all validations pass, the Authorization Server issues a Delegated Access Token. If any validation fails, the Authorization Server returns an Error Response.<a href="#section-5.2.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="delegated-access-token-response">
+<section id="section-5.2.3">
+          <h4 id="name-delegated-access-token-resp">
+<a href="#section-5.2.3" class="section-number selfRef">5.2.3. </a><a href="#name-delegated-access-token-resp" class="section-name selfRef">Delegated Access Token Response</a>
+          </h4>
+<p id="section-5.2.3-1">If the Token Request is valid, the Authorization Server issues a Delegated Access Token to the agent. This token SHOULD be a JSON Web Token (JWT) <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>]</span> to include claims that document the delegation.<a href="#section-5.2.3-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.2.3-2">
+<pre>
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Cache-Control: no-store
+Pragma: no-cache
+
+{
+  "access_token": "&lt;delegated_access_token&gt;",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "scope": "&lt;granted_scope&gt;"
+}
+</pre><a href="#section-5.2.3-2" class="pilcrow">¶</a>
+</div>
+<div id="parameters-3">
+<section id="section-5.2.3.1">
+            <h5 id="name-parameters-4">
+<a href="#section-5.2.3.1" class="section-number selfRef">5.2.3.1. </a><a href="#name-parameters-4" class="section-name selfRef">Parameters</a>
+            </h5>
+<p id="section-5.2.3.1-1">Similar to the standard Authorization Code Grant (Section 4.1.4 of <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>)<a href="#section-5.2.3.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="error-response-1">
+<section id="section-5.2.4">
+          <h4 id="name-error-response-2">
+<a href="#section-5.2.4" class="section-number selfRef">5.2.4. </a><a href="#name-error-response-2" class="section-name selfRef">Error Response</a>
+          </h4>
+<p id="section-5.2.4-1">If the request is invalid, the Authorization Server returns an error response with an HTTP 400 (Bad Request) status code.<a href="#section-5.2.4-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.2.4-2">
+<pre>
+HTTP/1.1 400 Bad Request
+Content-Type: application/json;charset=UTF-8
+Cache-Control: no-store
+Pragma: no-cache
+
+{
+  "error": "invalid_grant"
+}
+</pre><a href="#section-5.2.4-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="delegated-access-token-structure-and-claims">
+<section id="section-6">
+      <h2 id="name-delegated-access-token-stru">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-delegated-access-token-stru" class="section-name selfRef">Delegated Access Token Structure and Claims</a>
+      </h2>
+<p id="section-6-1">The Delegated Access Token SHOULD be a JWT Profile for OAuth 2.0 Access Tokens <span>[<a href="#RFC9068" class="cite xref">RFC9068</a>]</span>. It SHOULD carry claims that explicitly document the delegation chain.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">In addition to standard JWT claims (e.g., iss, aud, exp, iat, jti), a Delegated Access Token issued via this flow MUST contain the following claims:<a href="#section-6-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-6-3">
+        <dt id="section-6-3.1">act:</dt>
+        <dd style="margin-left: 1.5em" id="section-6-3.2">
+          <p id="section-6-3.2.1">REQUIRED. Actor - represents the party acting on behalf of the subject (Section 4.1 of <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span>). In a Delegated Access Token issued via this flow, this claim MUST contain a JSON object with at least the following member:
+* sub: REQUIRED. The unique identifier of the Agent that is acting on behalf of the user.
+* Additional members MAY be included in the act claim.<a href="#section-6-3.2.1" class="pilcrow">¶</a></p>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<p id="section-6-4">Example Decoded JWT Payload:<a href="#section-6-4" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6-5">
+<pre>
+{
+  "iss": "https://authorization-server.com/oauth2/token",
+  "aud": "resource_server",
+  "sub": "user-456",
+  "azp": "s6BhdRkqt3",
+  "scope": "read:email write:calendar",
+  "exp": 1746009896,
+  "iat": 1746006296,
+  "jti": "unique-token-id",
+  "act": {
+    "sub": "agent-finance-v1",
+    "aut": "APPLICATION_AGENT"
+  },
+  "aut": "APPLICATION_USER"
+}
+</pre><a href="#section-6-5" class="pilcrow">¶</a>
+</div>
+<p id="section-6-6">Resource Servers consuming this token can inspect the sub claim to identify the user and the act.sub claim to identify the specific agent that is performing the action. This provides a clear and auditable delegation path.<a href="#section-6-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-7">
+      <h2 id="name-security-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<span class="break"></span><dl class="dlParallel" id="section-7-1">
+        <dt id="section-7-1.1">Agent Authentication:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-1.2">
+          <p id="section-7-1.2.1">The security of this flow relies heavily on the Authorization Server's ability to securely authenticate the agent during the Token Request using the Agent Token. The method by which agents obtain and secure their Agent Tokens is critical and outside the scope of this specification but MUST be implemented securely.<a href="#section-7-1.2.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-1.3">Proof Key for Code Exchange (PKCE):</dt>
+        <dd style="margin-left: 1.5em" id="section-7-1.4">
+          <p id="section-7-1.4.1">PKCE <span>[<a href="#RFC7636" class="cite xref">RFC7636</a>]</span> is REQUIRED to prevent authorization code interception attacks, especially relevant if the client (and thus the agent receiving the code) is a public client or runs in an environment where the redirect URI cannot be strictly protected.<a href="#section-7-1.4.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-1.5">Single-Use and Short-Lived Authorization Codes:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-1.6">
+          <p id="section-7-1.6.1">Authorization Codes MUST be single-use and have a short expiration time to minimize the window for compromise.<a href="#section-7-1.6.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-1.7">Binding Code to Agent and Client:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-1.8">
+          <p id="section-7-1.8.1">The Authorization Server MUST bind the Authorization Code to the specific user, client (client_id), and requested agent (requested_agent) during issuance and verify this binding during the Token Request.<a href="#section-7-1.8.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-1.9">Clear User Consent:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-1.10">
+          <p id="section-7-1.10.1">The consent screen presented to the user SHOULD clearly identify the agent and the requested scopes to ensure the user understands exactly what authority they are delegating and to whom.<a href="#section-7-1.10.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-1.11">Auditability:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-1.12">
+          <p id="section-7-1.12.1">The claims in the Delegated Access Token (sub, act) provide essential information for auditing actions performed using the token, clearly showing who (user) authorized the action, which application (client) facilitated it, and which entity (agent) performed it.<a href="#section-7-1.12.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-7-1.13">Token Revocation:</dt>
+        <dd style="margin-left: 1.5em" id="section-7-1.14">
+          <p id="section-7-1.14.1">Mechanisms for revoking Delegated Access Tokens are essential. Revocation could be triggered by:
+* The user revoking consent.
+* The agent's Agent Token being revoked.
+* The user's account being disabled.
+* The agent's identity being disabled.
+* The client application being disabled.<a href="#section-7-1.14.1" class="pilcrow">¶</a></p>
+<p id="section-7-1.14.2">Resource Servers or Authorization Servers MUST have mechanisms to check the revocation status of tokens.<a href="#section-7-1.14.2" class="pilcrow">¶</a></p>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-8">
+      <h2 id="name-references">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-8.1">
+        <h3 id="name-normative-references">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6749">[RFC6749]</dt>
+        <dd>
+<span class="refAuthor">Hardt, D., Ed.</span>, <span class="refTitle">"The OAuth 2.0 Authorization Framework"</span>, <span class="seriesInfo">RFC 6749</span>, <span class="seriesInfo">DOI 10.17487/RFC6749</span>, <time datetime="2012-10" class="refDate">October 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc6749">https://www.rfc-editor.org/rfc/rfc6749</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7519">[RFC7519]</dt>
+        <dd>
+<span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">N. Sakimura</span>, <span class="refTitle">"JSON Web Token (JWT)"</span>, <span class="seriesInfo">RFC 7519</span>, <span class="seriesInfo">DOI 10.17487/RFC7519</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7519">https://www.rfc-editor.org/rfc/rfc7519</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7636">[RFC7636]</dt>
+        <dd>
+<span class="refAuthor">Sakimura, N., Ed.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">N. Agarwal</span>, <span class="refTitle">"Proof Key for Code Exchange by OAuth Public Clients"</span>, <span class="seriesInfo">RFC 7636</span>, <span class="seriesInfo">DOI 10.17487/RFC7636</span>, <time datetime="2015-09" class="refDate">September 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7636">https://www.rfc-editor.org/rfc/rfc7636</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8174">https://www.rfc-editor.org/rfc/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8693">[RFC8693]</dt>
+        <dd>
+<span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Nadalin, A.</span>, <span class="refAuthor">Campbell, B., Ed.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">C. Mortimore</span>, <span class="refTitle">"OAuth 2.0 Token Exchange"</span>, <span class="seriesInfo">RFC 8693</span>, <span class="seriesInfo">DOI 10.17487/RFC8693</span>, <time datetime="2020-01" class="refDate">January 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8693">https://www.rfc-editor.org/rfc/rfc8693</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9068">[RFC9068]</dt>
+      <dd>
+<span class="refAuthor">Bertocci, V.</span>, <span class="refTitle">"JSON Web Token (JWT) Profile for OAuth 2.0 Access Tokens"</span>, <span class="seriesInfo">RFC 9068</span>, <span class="seriesInfo">DOI 10.17487/RFC9068</span>, <time datetime="2021-10" class="refDate">October 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9068">https://www.rfc-editor.org/rfc/rfc9068</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-8.2">
+        <h3 id="name-informative-references">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC7662">[RFC7662]</dt>
+      <dd>
+<span class="refAuthor">Richer, J., Ed.</span>, <span class="refTitle">"OAuth 2.0 Token Introspection"</span>, <span class="seriesInfo">RFC 7662</span>, <span class="seriesInfo">DOI 10.17487/RFC7662</span>, <time datetime="2015-10" class="refDate">October 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7662">https://www.rfc-editor.org/rfc/rfc7662</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-A">
+      <h2 id="name-authors-address">
+<a href="#name-authors-address" class="section-name selfRef">Author's Address</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Thilina Shashimal Senarath</span></div>
+<div dir="auto" class="left"><span class="org">WSO2</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:thilinasenarath97@gmail.com" class="email">thilinasenarath97@gmail.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
