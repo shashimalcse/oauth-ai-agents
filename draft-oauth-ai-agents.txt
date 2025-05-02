@@ -8,7 +8,7 @@ Intended status: Informational                                2 May 2025
 Expires: 3 November 2025
 
 
-                  OAuth 2.0 for AI Agent Authorization
+   OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents
                          draft-oauth-ai-agents
 
 Abstract
