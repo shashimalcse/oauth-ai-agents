@@ -3,7 +3,7 @@ title: "OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents"
 abbrev: "OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents"
 category: info
 
-docname: draft-oauth-ai-agents-on-behalf-of-user
+docname: draft-oauth-ai-agents-on-behalf-of-user-00
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
