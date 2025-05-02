@@ -1,6 +1,6 @@
 ---
-title: "OAuth 2.0 for AI Agent Authorization"
-abbrev: "OAuth 2.0 for AI Agent Authorization"
+title: "OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents"
+abbrev: "OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents"
 category: info
 
 docname: draft-oauth-ai-agents
