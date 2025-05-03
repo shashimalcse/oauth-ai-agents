@@ -20,6 +20,10 @@ author:
     fullname: Thilina Shashimal Senarath
     organization: WSO2
     email: thilinasenarath97@gmail.com
+    
+    fullname: Ayesha Dissanayaka
+    organization: WSO2
+    email: ayshsandu@gmail.com
 
 normative:
   RFC2119:
