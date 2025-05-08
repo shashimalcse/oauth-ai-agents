@@ -5,15 +5,17 @@
 <meta content="Common,Latin" name="scripts">
 <meta content="initial-scale=1.0" name="viewport">
 <title>OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents</title>
+<meta content="Thilina Shashimal Senarath" name="author">
 <meta content="Ayesha Dissanayaka" name="author">
 <meta content="
-       This specification defines an extension to the OAuth 2.0 Authorization Framework   to enable AI agents to obtain access tokens to act on behalf of users. It treats an agent as a distinct identity in the ecosystem, which has been given a unique identifier. The spec introduces a new authorization request parameter,  requested_agent  to specify the agent who requires the token onbehalf of the user, and defines a grant type,  urn:ietf:params:oauth:grant-type:agent-authorization_code , specifically designed to  facilitate explicit user consent for an agent's actions and enable the agent to exchange an authorization code for a access token by providing its own authentication credential  (an agent token). 
-The extension ensures secure delegation, explicit user consent captured at the authorization server, simplified request/response flow between the involved parties, and enhanced auditability through specific token claims that document the delegation path from the user to the agent acting via a client application. 
+       This specification extends the OAuth 2.0 Authorization Framework   to enable AI agents to securely obtain access tokens for acting on behalf of users. It introduces the  requested_actor  parameter in authorization requests to identify the specific agent requiring delegation and the  actor_token  parameter in token requests to authenticate the agent during the exchange of an authorization code for an access token. The flow can be initiated by a resource server challenge, ensuring that user consent is obtained dynamically when access is attempted. This extension ensures secure delegation with explicit user consent, streamlines the authorization flow, and enhances auditability through access token claims that document the delegation chain from the user to the agent via a client application. 
     " name="description">
 <meta content="xml2rfc 3.28.1" name="generator">
 <meta content="ai-agents" name="keyword">
 <meta content="authorization" name="keyword">
-<meta content="draft-oauth-ai-agents-on-behalf-of-user-00" name="ietf.draft">
+<meta content="actor" name="keyword">
+<meta content="obo" name="keyword">
+<meta content="draft-oauth-ai-agents-on-behalf-of-user-01" name="ietf.draft">
 <!-- Generator version information:
   xml2rfc 3.28.1
     Python 3.12.10
@@ -1049,8 +1051,8 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <td class="right">May 2025</td>
 </tr></thead>
 <tfoot><tr>
-<td class="left">Dissanayaka</td>
-<td class="center">Expires 4 November 2025</td>
+<td class="left">Senarath &amp; Dissanayaka</td>
+<td class="center">Expires 9 November 2025</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1060,17 +1062,21 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dt class="label-workgroup">Workgroup:</dt>
 <dd class="workgroup">Network Working Group</dd>
 <dt class="label-internet-draft">Internet-Draft:</dt>
-<dd class="internet-draft">draft-oauth-ai-agents-on-behalf-of-user-00</dd>
+<dd class="internet-draft">draft-oauth-ai-agents-on-behalf-of-user-01</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2025-05-03" class="published">3 May 2025</time>
+<time datetime="2025-05-08" class="published">8 May 2025</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Informational</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2025-11-04">4 November 2025</time></dd>
-<dt class="label-authors">Author:</dt>
+<dd class="expires"><time datetime="2025-11-09">9 November 2025</time></dd>
+<dt class="label-authors">Authors:</dt>
 <dd class="authors">
+<div class="author">
+      <div class="author-name">T. S. Senarath</div>
+<div class="org">WSO2</div>
+</div>
 <div class="author">
       <div class="author-name">A. Dissanayaka</div>
 <div class="org">WSO2</div>
@@ -1081,8 +1087,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <h1 id="title">OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents</h1>
 <section id="section-abstract">
       <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
-<p id="section-abstract-1">This specification defines an extension to the OAuth 2.0 Authorization Framework <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span> to enable AI agents to obtain access tokens to act on behalf of users. It treats an agent as a distinct identity in the ecosystem, which has been given a unique identifier. The spec introduces a new authorization request parameter, <code>requested_agent</code> to specify the agent who requires the token onbehalf of the user, and defines a grant type, <code>urn:ietf:params:oauth:grant-type:agent-authorization_code</code>, specifically designed to <strong>facilitate explicit user consent for an agent's actions and enable the agent to exchange an authorization code for a access token by providing its own authentication credential</strong> (an agent token). 
-The extension ensures secure delegation, explicit user consent captured at the authorization server, simplified request/response flow between the involved parties, and enhanced auditability through specific token claims that document the delegation path from the user to the agent acting via a client application.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-1">This specification extends the OAuth 2.0 Authorization Framework <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span> to enable AI agents to securely obtain access tokens for acting on behalf of users. It introduces the <strong>requested_actor</strong> parameter in authorization requests to identify the specific agent requiring delegation and the <strong>actor_token</strong> parameter in token requests to authenticate the agent during the exchange of an authorization code for an access token. The flow can be initiated by a resource server challenge, ensuring that user consent is obtained dynamically when access is attempted. This extension ensures secure delegation with explicit user consent, streamlines the authorization flow, and enhances auditability through access token claims that document the delegation chain from the user to the agent via a client application.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
 </section>
 <div id="status-of-memo">
 <section id="section-boilerplate.1">
@@ -1103,7 +1108,7 @@ The extension ensures secure delegation, explicit user consent captured at the a
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 4 November 2025.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 9 November 2025.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1139,77 +1144,74 @@ The extension ensures secure delegation, explicit user consent captured at the a
             <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
-            <p id="section-toc.1-1.3.1" class="keepWithNext"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-preconditions" class="internal xref">Preconditions</a></p>
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-protocol-overview" class="internal xref">Protocol Overview</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1" class="keepWithNext"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-high-level-overview" class="internal xref">High-Level Overview</a></p>
+</li>
+            </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
-            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-protocol-overview" class="internal xref">Protocol Overview</a></p>
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-detailed-protocol-steps" class="internal xref">Detailed Protocol Steps</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
-                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-high-level-overview" class="internal xref">High-Level Overview</a></p>
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-user-authorization-request" class="internal xref">User Authorization Request</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.1">
+                    <p id="section-toc.1-1.4.2.1.2.1.1"><a href="#section-4.1.1" class="auto internal xref">4.1.1</a>.  <a href="#name-parameters" class="internal xref">Parameters</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.2">
+                    <p id="section-toc.1-1.4.2.1.2.2.1"><a href="#section-4.1.2" class="auto internal xref">4.1.2</a>.  <a href="#name-authorization-server-proces" class="internal xref">Authorization Server Processing</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.3">
+                    <p id="section-toc.1-1.4.2.1.2.3.1"><a href="#section-4.1.3" class="auto internal xref">4.1.3</a>.  <a href="#name-authorization-code-response" class="internal xref">Authorization Code Response</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.4">
+                    <p id="section-toc.1-1.4.2.1.2.4.1"><a href="#section-4.1.4" class="auto internal xref">4.1.4</a>.  <a href="#name-error-response" class="internal xref">Error Response</a></p>
+</li>
+                </ul>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
-                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-sequence-diagram" class="internal xref">Sequence Diagram</a></p>
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-access-token-request" class="internal xref">Access Token Request</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.1">
+                    <p id="section-toc.1-1.4.2.2.2.1.1"><a href="#section-4.2.1" class="auto internal xref">4.2.1</a>.  <a href="#name-parameters-3" class="internal xref">Parameters</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.2">
+                    <p id="section-toc.1-1.4.2.2.2.2.1"><a href="#section-4.2.2" class="auto internal xref">4.2.2</a>.  <a href="#name-authorization-server-process" class="internal xref">Authorization Server Processing</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.3">
+                    <p id="section-toc.1-1.4.2.2.2.3.1"><a href="#section-4.2.3" class="auto internal xref">4.2.3</a>.  <a href="#name-access-token-response" class="internal xref">Access Token Response</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.4">
+                    <p id="section-toc.1-1.4.2.2.2.4.1"><a href="#section-4.2.4" class="auto internal xref">4.2.4</a>.  <a href="#name-error-response-2" class="internal xref">Error Response</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-access-token-structure-and-" class="internal xref">Access Token Structure and Claims</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4">
+                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-resource-server-challenge" class="internal xref">Resource Server Challenge</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.1">
+                    <p id="section-toc.1-1.4.2.4.2.1.1"><a href="#section-4.4.1" class="auto internal xref">4.4.1</a>.  <a href="#name-resource-server-processing" class="internal xref">Resource Server Processing</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.2">
+                    <p id="section-toc.1-1.4.2.4.2.2.1"><a href="#section-4.4.2" class="auto internal xref">4.4.2</a>.  <a href="#name-the-www-authenticate-respon" class="internal xref">The WWW-Authenticate Response Header Field</a></p>
+</li>
+                </ul>
 </li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
-            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-detailed-protocol-steps" class="internal xref">Detailed Protocol Steps</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
-                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-user-authorization-request" class="internal xref">User Authorization Request</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.1">
-                    <p id="section-toc.1-1.5.2.1.2.1.1"><a href="#section-5.1.1" class="auto internal xref">5.1.1</a>.  <a href="#name-parameters" class="internal xref">Parameters</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.2">
-                    <p id="section-toc.1-1.5.2.1.2.2.1"><a href="#section-5.1.2" class="auto internal xref">5.1.2</a>.  <a href="#name-authorization-server-proces" class="internal xref">Authorization Server Processing</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.3">
-                    <p id="section-toc.1-1.5.2.1.2.3.1"><a href="#section-5.1.3" class="auto internal xref">5.1.3</a>.  <a href="#name-authorization-code-response" class="internal xref">Authorization Code Response</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.4">
-                    <p id="section-toc.1-1.5.2.1.2.4.1"><a href="#section-5.1.4" class="auto internal xref">5.1.4</a>.  <a href="#name-error-response" class="internal xref">Error Response</a></p>
-</li>
-                </ul>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
-                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-access-token-request" class="internal xref">Access Token Request</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.1">
-                    <p id="section-toc.1-1.5.2.2.2.1.1"><a href="#section-5.2.1" class="auto internal xref">5.2.1</a>.  <a href="#name-parameters-3" class="internal xref">Parameters</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.2">
-                    <p id="section-toc.1-1.5.2.2.2.2.1"><a href="#section-5.2.2" class="auto internal xref">5.2.2</a>.  <a href="#name-authorization-server-process" class="internal xref">Authorization Server Processing</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.3">
-                    <p id="section-toc.1-1.5.2.2.2.3.1"><a href="#section-5.2.3" class="auto internal xref">5.2.3</a>.  <a href="#name-access-token-response" class="internal xref">Access Token Response</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2.2.4">
-                    <p id="section-toc.1-1.5.2.2.2.4.1"><a href="#section-5.2.4" class="auto internal xref">5.2.4</a>.  <a href="#name-error-response-2" class="internal xref">Error Response</a></p>
-</li>
-                </ul>
-</li>
-            </ul>
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
-            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-access-token-structure-and-" class="internal xref">Access Token Structure and Claims</a></p>
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
-            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
-</li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
-            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-references" class="internal xref">References</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
-                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
-                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
-</li>
-            </ul>
-</li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
-            <p id="section-toc.1-1.9.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
+            <p id="section-toc.1-1.7.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
 </li>
         </ul>
 </nav>
@@ -1220,12 +1222,23 @@ The extension ensures secure delegation, explicit user consent captured at the a
       <h2 id="name-introduction">
 <a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
       </h2>
-<p id="section-1-1">AI agents are increasingly integrated into systems to perform tasks on behalf of users. These agents often require access to protected resources, necessitating a robust and secure authorization mechanism that accurately reflects the user's intent and the agent's role in the access request. Standard OAuth 2.0 flows, such as the Authorization Code Grant <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span> and the Client Credentials Grant <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>, do not fully address the nuances of agent delegation where explicit user consent for a specific agent's action is required and the agent itself acts as a distinct identity in the token exchange process. While the OAuth 2.0 Token Exchange specification <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> provides a mechanism for exchanging tokens, it typically focuses on inter-service communication or impersonation flows initiated server-side and doesn't inherently provide a mechanism for obtaining explicit user consent for an agent via the front channel initiated from the authorization endpoint. Also, the Token Exchange specification <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> doesn't specify the method for obtaining the subject token. This specification simplifies this by using the Authorization Code flow without requiring the subject token upfront or over a backchannel user authentication/consent point of interaction.<a href="#section-1-1" class="pilcrow">¶</a></p>
-<p id="section-1-2">This specification extends OAuth 2.0 to specifically support scenarios where a user delegates authority to an AI agent. It leverages the existing Authorization Code Grant flow by 
- 1. Introducing a mechanism at the authorization endpoint to identify the specific agent for which delegation is sought
- 2. Defining a new grant type for the token endpoint that allows the agent to authenticate itself while presenting the user-approved authorization code.
- 3. Explicitly recording the identity of the user (resource owner), the agent (who acts on behalf of the user), and the client application involved, in the resulting access token, that facilitates clear audit trails.<a href="#section-1-2" class="pilcrow">¶</a></p>
-<p id="section-1-3">The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals, as shown here.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-1">AI agents are increasingly common in systems, performing tasks on behalf of users. These agents often need access to protected resources, requiring a secure and robust authorization mechanism that clearly reflects the user's intent and the agent's role in the access request.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">Standard OAuth 2.0 flows, such as the Authorization Code Grant and the Client Credentials Grant <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>, do not fully address the complexities of agent delegation. They lack specific mechanisms to obtain explicit user consent for an agent's actions or to treat the agent as a distinct identity during the token exchange process.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">The OAuth 2.0 Token Exchange specification <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> provides a framework for token exchange, but it is primarily designed for server-side communication or impersonation scenarios. It does not natively support obtaining explicit user consent for an agent via the front channel from the authorization endpoint. Furthermore, <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> does not specify how to acquire the subject token, adding complexity to the delegation process.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">To overcome these limitations, this specification extends the OAuth 2.0 Authorization Code Grant flow to enable user-delegated authorization for AI agents. It introduces the following enhancements:<a href="#section-1-4" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-1-5">
+<li id="section-1-5.1">
+          <p id="section-1-5.1.1">The <strong>requested_actor</strong> parameter at the authorization endpoint, allowing the client to specify the agent for which delegation is requested.<a href="#section-1-5.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li id="section-1-5.2">
+          <p id="section-1-5.2.1">The <strong>actor_token</strong> parameter at the token endpoint, enabling the agent to authenticate itself when exchanging a user-approved authorization code for an access token.<a href="#section-1-5.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li id="section-1-5.3">
+          <p id="section-1-5.3.1">Detailed claims in the resulting access token, capturing the identities of the user, agent, and client application for transparency and auditability.<a href="#section-1-5.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ol>
+<p id="section-1-6">This approach builds on existing OAuth 2.0 infrastructure to deliver a secure, simplified, and user-centric delegation process tailored for AI agents.<a href="#section-1-6" class="pilcrow">¶</a></p>
+<p id="section-1-7">The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they appear in all capitals, as shown here.<a href="#section-1-7" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="terminology">
@@ -1235,169 +1248,245 @@ The extension ensures secure delegation, explicit user consent captured at the a
       </h2>
 <p id="section-2-1">This specification uses the following terms:<a href="#section-2-1" class="pilcrow">¶</a></p>
 <span class="break"></span><dl class="dlParallel" id="section-2-2">
-        <dt id="section-2-2.1">Agent:</dt>
+        <dt id="section-2-2.1">Actor:</dt>
         <dd style="margin-left: 1.5em" id="section-2-2.2">
-          <p id="section-2-2.2.1">An autonomous software entity that acts on behalf of a user. An agent has a distinct identity and authentication credentials separate from the client application that might host or invoke it.<a href="#section-2-2.2.1" class="pilcrow">¶</a></p>
+          <p id="section-2-2.2.1">An entity that acts on behalf of a user. In context of AI applications, the actor is the agent that performs actions on behalf of the user.<a href="#section-2-2.2.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
 <dt id="section-2-2.3">Client:</dt>
         <dd style="margin-left: 1.5em" id="section-2-2.4">
-          <p id="section-2-2.4.1">An application that initiates the authorization flow and facilitates the interaction between the user, agent, and authorization server. This is the "client" as defined in OAuth 2.0 <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>.<a href="#section-2-2.4.1" class="pilcrow">¶</a></p>
+          <p id="section-2-2.4.1">An application that initiates the authorization flow and facilitates the interaction between the user, actor, and authorization server. This is the "client" as defined in OAuth 2.0 <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>.<a href="#section-2-2.4.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
 <dt id="section-2-2.5">User:</dt>
         <dd style="margin-left: 1.5em" id="section-2-2.6">
-          <p id="section-2-2.6.1">The resource owner who grants consent for an agent to access their protected resources.<a href="#section-2-2.6.1" class="pilcrow">¶</a></p>
+          <p id="section-2-2.6.1">The resource owner who grants consent for an actor to access their protected resources.<a href="#section-2-2.6.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
 <dt id="section-2-2.7">Authorization Server:</dt>
         <dd style="margin-left: 1.5em" id="section-2-2.8">
-          <p id="section-2-2.8.1">The server that issues access tokens to the client and agent after successfully authenticating a resource owner and obtaining authorization.<a href="#section-2-2.8.1" class="pilcrow">¶</a></p>
+          <p id="section-2-2.8.1">The server that issues access tokens to the client and actor after successfully authenticating a resource owner and obtaining authorization.<a href="#section-2-2.8.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
 <dt id="section-2-2.9">Resource Server:</dt>
         <dd style="margin-left: 1.5em" id="section-2-2.10">
-          <p id="section-2-2.10.1">The server hosting the protected resources, capable of accepting and validating access tokens. Resource server can be a model context protocol (MCP) server, another agent or genaric protected resource.<a href="#section-2-2.10.1" class="pilcrow">¶</a></p>
+          <p id="section-2-2.10.1">The server hosting the protected resources, capable of accepting and validating access tokens. In context of AI applications, resource server can be a model context protocol (MCP) server, another agent or genaric protected resource.<a href="#section-2-2.10.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
 <dt id="section-2-2.11">Authorization Code:</dt>
         <dd style="margin-left: 1.5em" id="section-2-2.12">
-          <p id="section-2-2.12.1">A temporary, single-use code issued by the authorization server to the client's redirect URI after the user has authenticated and granted consent for a specific agent to act on their behalf. This code is then provided to the agent.<a href="#section-2-2.12.1" class="pilcrow">¶</a></p>
+          <p id="section-2-2.12.1">A temporary, single-use code issued by the authorization server to the client's redirect URI after the user has authenticated and granted consent for a specific actor to act on their behalf.<a href="#section-2-2.12.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
-<dt id="section-2-2.13">Agent Token:</dt>
+<dt id="section-2-2.13">Actor Token:</dt>
         <dd style="margin-left: 1.5em" id="section-2-2.14">
-          <p id="section-2-2.14.1">A security token (e.g., a JWT <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>]</span>) used by an agent to authenticate itself to the authorization server or resource servers. The <code>sub</code> claim of an agent token identifies the agent. An Agent can obtain an Agent token by authenticating itself to the authorization server using a different grant, which is not included in the scope of this specification.<a href="#section-2-2.14.1" class="pilcrow">¶</a></p>
+          <p id="section-2-2.14.1">A security token (e.g., a JWT <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>]</span>) used by an actor to authenticate itself to the authorization server or resource servers. The <code>sub</code> claim of an Actor Token identifies the actor. An actor can obtain an Actor Token by authenticating itself to the authorization server using a different grant, which is not included in the scope of this specification.<a href="#section-2-2.14.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
 <dt id="section-2-2.15">Access Token:</dt>
         <dd style="margin-left: 1.5em" id="section-2-2.16">
-          <p id="section-2-2.16.1">An access token issued by the authorization server to an agent, permitting it to access protected resources on behalf of a specific user. This token explicitly documents the delegation path.<a href="#section-2-2.16.1" class="pilcrow">¶</a></p>
+          <p id="section-2-2.16.1">An access token issued by the authorization server to an actor, permitting it to access protected resources on behalf of a specific user. This token explicitly documents the delegation path.<a href="#section-2-2.16.1" class="pilcrow">¶</a></p>
 </dd>
       <dd class="break"></dd>
 </dl>
 </section>
 </div>
-<div id="preconditions">
-<section id="section-3">
-      <h2 id="name-preconditions">
-<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-preconditions" class="section-name selfRef">Preconditions</a>
-      </h2>
-<p id="section-3-1">The agent holds a valid agent token, obtained via a separate process by authenticating itself to the authorization server using a different grant, which is not covered in this document. The agent token is used to authenticate the agent and authorize it on behalf of a user when issuing the access token.<a href="#section-3-1" class="pilcrow">¶</a></p>
-</section>
-</div>
 <div id="protocol-overview">
-<section id="section-4">
+<section id="section-3">
       <h2 id="name-protocol-overview">
-<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-protocol-overview" class="section-name selfRef">Protocol Overview</a>
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-protocol-overview" class="section-name selfRef">Protocol Overview</a>
       </h2>
-<p id="section-4-1">This extension defines a flow where a client application facilitates user consent for an agent, and the agent then uses this consent along with its own authentication to obtain an access token.
-It is important to note that the separation between client and agent is logical here. They both will reside in the same host in a typical implementation, and there will NOT be any transport-level communication between client and agent, but internal.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-3-1">This extension defines a flow where a client application facilitates user consent for an actor, and the actor then uses this consent along with its own authentication to obtain an access token.<a href="#section-3-1" class="pilcrow">¶</a></p>
 <div id="high-level-overview">
-<section id="section-4.1">
+<section id="section-3.1">
         <h3 id="name-high-level-overview">
-<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-high-level-overview" class="section-name selfRef">High-Level Overview</a>
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-high-level-overview" class="section-name selfRef">High-Level Overview</a>
         </h3>
-<ol start="1" type="1" class="normal type-1" id="section-4.1-1">
-<li id="section-4.1-1.1">
-            <p id="section-4.1-1.1.1">The client application initiates the flow by directing the user's user-agent to the Authorization Server's authorization endpoint, including a requested_agent parameter identifying the agent.<a href="#section-4.1-1.1.1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-3.1-1">
+<li id="section-3.1-1.1">
+            <p id="section-3.1-1.1.1">The Actor signals to the Client that it needs to perform an action on the User's behalf, providing its identifier (ActorID)<a href="#section-3.1-1.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-4.1-1.2">
-            <p id="section-4.1-1.2.1">The Authorization Server authenticates the user and presents a consent screen detailing the client, the requested agent, and the scopes.
-Upon user consent, the Authorization Server issues a short-lived Authorization Code tied to the user, client, and agent, and redirects the user-agent back to the client's redirect_uri.<a href="#section-4.1-1.2.1" class="pilcrow">¶</a></p>
+          <li id="section-3.1-1.2">
+            <p id="section-3.1-1.2.1">The Client attempts the action by making a request to the Resource Server<a href="#section-3.1-1.2.1" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-4.1-1.3">
-            <p id="section-4.1-1.3.1">The client receives the Authorization Code (via the user-agent redirect). The client then typically passes this code to the agent.<a href="#section-4.1-1.3.1" class="pilcrow">¶</a></p>
-</li>
-          <li id="section-4.1-1.4">
-            <p id="section-4.1-1.4.1">The agent requests an Access Token from the Authorization Server's token endpoint using the new <code>urn:ietf:params:oauth:grant-type:agent-authorization_code</code> grant type. This request includes the Authorization Code, the PKCE code_verifier, and the agent token.<a href="#section-4.1-1.4.1" class="pilcrow">¶</a></p>
-</li>
-          <li id="section-4.1-1.5">
-            <p id="section-4.1-1.5.1">The Authorization Server validates the request, including verifying the Authorization Code, the PKCE code_verifier, and the Agent Token. It ensures the Agent Token corresponds to the requested_agent approved by the user.<a href="#section-4.1-1.5.1" class="pilcrow">¶</a></p>
-</li>
-          <li id="section-4.1-1.6">
-            <p id="section-4.1-1.6.1">Upon successful validation, the Authorization Server issues an Access Token to the agent. This token is typically a JWT containing claims identifying the user (sub), the client (azp), and the agent (act claim).<a href="#section-4.1-1.6.1" class="pilcrow">¶</a></p>
+          <li id="section-3.1-1.3">
+            <p id="section-3.1-1.3.1">If access is unsuccessful (e.g., HTTP 401 Unauthorized due to an invalid/missing token, or HTTP 403 Forbidden due to insufficient scope), Resource Server challenges the Client.<a href="#section-3.1-1.3.1" class="pilcrow">¶</a></p>
 </li>
         </ol>
-</section>
-</div>
-<div id="sequence-diagram">
-<section id="section-4.2">
-        <h3 id="name-sequence-diagram">
-<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-sequence-diagram" class="section-name selfRef">Sequence Diagram</a>
-        </h3>
-<div class="alignLeft art-ascii-art art-text artwork" id="section-4.2-1">
+<p id="section-3.1-2">4.The Client initiates the authorization flow by redirecting the User's User-Agent to the Authorization Server's authorization endpoint. This request includes a requested_actor parameter (matching the ActorID).<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-3.1-3">
+<li id="section-3.1-3.1">
+            <p id="section-3.1-3.1.1">The Authorization Server authenticates the User (if not already authenticated) and presents a consent screen detailing the Client, the requested_actor, and the requested scopes.<a href="#section-3.1-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-3.2">
+            <p id="section-3.1-3.2.1">Upon User consent, the Authorization Server issues a short-lived Authorization Code (tied to the User, Client, and consented Actor) and redirects the User-Agent back to the Client's redirect_uri.<a href="#section-3.1-3.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-3.3">
+            <p id="section-3.1-3.3.1">The Client receives the Authorization Code via the User-Agent redirect.<a href="#section-3.1-3.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-3.4">
+            <p id="section-3.1-3.4.1">The Client requests an Access Token from the Authorization Server's token endpoint. This request uses the standard authorization_code grant type. The request includes the Authorization Code, the PKCE code_verifier, and the actor_token (the authentication token of the Actor).<a href="#section-3.1-3.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-3.5">
+            <p id="section-3.1-3.5.1">The Authorization Server validates the entire request: Authorization Code, PKCE code_verifier, and the actor_token. It ensures the actor_token corresponds to the requested_actor for whom the User granted consent (which is linked to the Authorization Code).<a href="#section-3.1-3.5.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-3.6">
+            <p id="section-3.1-3.6.1">Upon successful validation, the Authorization Server issues an Access Token to the Client. This token is a JWT containing claims identifying the User (e.g., sub), the Client (e.g., azp or client_id), and the Actor (e.g., act claim).<a href="#section-3.1-3.6.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-3.7">
+            <p id="section-3.1-3.7.1">The Client retries the action or performs a new action on the Resource Server using this newly obtained Access Token.<a href="#section-3.1-3.7.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-3.8">
+            <p id="section-3.1-3.8.1">If access is successful (either initially or on retry): The Resource Server validates the Access Token (including the delegation claims like act) and processes the request, returning the resource or confirming the action.<a href="#section-3.1-3.8.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+<p id="section-3.1-4">The Client may then pass the result to the Actor.
+## Sequence Diagram<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+<div class="alignLeft art-ascii-art art-text artwork" id="section-3.1-5">
 <pre>
-+------------+          +--------+        +--------+        +--------------------+        +----------------+
-| User-Agent |          | Client |        | Agent  |        | Authorization      |        | Resource       |
-|            |          |        |        |        |        | Server             |        | Server         |
-+------------+          +--------+        +--------+        +--------------------+        +----------------+
-       |                     |                 |                       |                          |
-       |                     |       (A) Need to act on behalf of user |                          |
-       |                     |&lt;----------------|                       |                          |
-       |                     |                 |                       |                          |
-           (B) Open browser with authorization url + code challenge + requested_agent             |
-       |&lt;--------------------|                 |                       |                          |
-       |                     |                 |                       |                          |
-       |   (C) Request to authorization endpoint                       |                          |
-       |--------------------------------------------------------------&gt;|                          |
-       |                     |                 |                       |                          |
-       |   (D) User authenticates and consents (show agent + scopes)   |                          |
-       |&lt;-------------------------------------------------------------&gt;|                          |
-       |                     |                 |                       |                          |
-       |   (E) Redirect with Authorization Code                        |                          |
-       |&lt;--------------------------------------------------------------|                          |
-       |                     |                 |                       |                          |
-       |   (F) Authorization Code              |                       |                          |
-       |--------------------&gt;|                 |                       |                          |
-       |                     |   (G) POST /token (code + verifier + agent token)                  |
-       |                     |----------------------------------------&gt;|                          |
-       |                     |                 |                       |                          |
-       |                     |   (H) Access Token (JWT)                |                          |
-       |                     |&lt;----------------------------------------|                          |
-       |                     |                                         |                          |
-       |                     |   (I) Access Resource with the Access Token                        |
-       |                     |-------------------------------------------------------------------&gt;|
-       |                     |                 |                       |(J) JWKS Token validation |
-       |                     |                 |                       |&lt;-------------------------|
-       |                     |                 |                       |                          |
-       |                     |       (K) Protected Resource Response   |                          |
-       |                     |&lt;-------------------------------------------------------------------|
-       |                     |                 |                       |                          |
-       |                     |   (L) Response with Resource Data       |                          |
-       |                     |----------------&gt;|                       |                          |
-</pre><a href="#section-4.2-1" class="pilcrow">¶</a>
+    +-----------+   +--------+    +-----------+   +---------------------+    +---------------+
+    | User-Agent|   | Client |   | Act as Actor|  | Authorization Server|   | Resource Server |
+    +-----------+   +--------+    +-----------+   +---------------------+    +---------------+
+          |             |              |                   |                       |
+          |     (1) Signals need to act on User's behalf   |                       |
+          |             |  by passing ActorID              |                       |
+          |             |&lt;-------------|                   |
+          |             |              |                   |                       |
+          |             |              (2) Client attempts action                  |
+          |             | -------------------------------------------------------&gt; |
+          |             |              |                   |                       |
+    /--------------------------------- Access Unsuccessful ----------------------------------\
+    |     |             |              |                   |                       |         |
+    |------------------------------------[If Unauthorized]-----------------------------------|
+    |     |             |              |                   |                       |         |
+    |     |             |              |             +---------------------------------+     |
+    |     |             |              |             | Token validation is failed      |     |
+    |     |             |              |             +---------------------------------+     |
+    |     |             |              |                   |                       |         |
+    |     |             |  (3) CHALLENGE: HTTP 401, WWW-Authenticate:              |         |
+    |     |             |           Bearer error="invalid_token"                   |         |
+    |     |             | &lt;--------------------------------------------------------|         |
+    |     |             |              |                   |                       |         |
+    |  (4) Redirect to AS (for User Authentication and Consent)                    |         |
+    |              with requested_actor request parameter                          |         |
+    |     |&lt;------------|              |                   |                       |         |
+    |     |             |              |                   |                       |         |
+    |     |         (5) Authorization Request              |                       |         |
+    |     |-----------------------------------------------&gt;|                       |         |
+    |     |             |              |                   |                       |         |
+    |     |     (6) User Authenticates &amp; Consents          |                       |         |
+    |     |&lt;----------------------------------------------&gt;|                       |         |
+    |     |             |              |                   |                       |         |
+    |------------------------------------[If Forbidden]--------------------------------------|
+    |     |             |              |                   |                       |         |
+    |     |             |              |            +---------------------------------+      |
+    |     |             |              |            |   Insufficient Authorization    |      |
+    |     |             |              |            +---------------------------------+      |
+    |     |             |              |                   |                       |         |
+    |     |               (7) CHALLENGE: HTTP 403, WWW-Authenticate:               |         |
+    |     |       Bearer error="insufficient_scope" required_scope="scope1 scope2" |         |
+    |     |             | &lt;--------------------------------------------------------|         |
+    |     |             |              |                   |                       |         |
+    |  (8) Redirect to AS (for User Consent)               |                       |         |
+    |    with requested_actor request parameter            |                       |         |
+    |     |&lt;------------|              |                   |                       |         |
+    |     |             |              |                   |                       |         |
+    |     |         (9) Authorization Request              |                       |         |
+    |     |-----------------------------------------------&gt;|                       |         |
+    |     |             |              |                   |                       |         |
+    |     |            (10) User Consents                  |                       |         |
+    |     |&lt;----------------------------------------------&gt;|                       |         |
+    |----------------------------------------------------------------------------------------|
+    |     |             |              |                   |                       |         |
+    |     | (11) Redirect with Authorization Code          |                       |         |
+    |     | &lt;----------------------------------------------|                       |         |
+    |     |             |              |                   |                       |         |
+    |     | (12) Authorization Code    |                   |                       |         |
+    |     |------------&gt;|              |                   |                       |         |
+    |     |             |              |                   |                       |         |
+    |     |             | (13) Token Request with actor_token request parameter    |         |
+    |     |             | ---------------------------------|                       |         |
+    |     |             |              |                   |                       |         |
+    |     |             |  (14) Access Token (JWT)         |                       |         |
+    |     |             | &lt;--------------------------------|                       |         |
+    |     |             |              |                   |                       |         |
+    |     |             |  (15) Client Retries Action with Access Token            |         |
+    |     |             |---------------------------------------------------------&gt;|         |
+    \----------------------------------------------------------------------------------------/
+    /------------------------------------ Access Successful ---------------------------------\
+    |     |             |              |                   |                       |         |
+    |     |             |  (16) Protected Resource / Action Succeeded              |         |
+    |     |             |&lt;---------------------------------------------------------|         |
+    \----------------------------------------------------------------------------------------/
+</pre><a href="#section-3.1-5" class="pilcrow">¶</a>
 </div>
-<p id="section-4.2-2">The steps in the sequence diagram are as follows:<a href="#section-4.2-2" class="pilcrow">¶</a></p>
-<p id="section-4.2-3">Note: The separation between client and agent is logical here; typically, they both reside in the same host.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
-<p id="section-4.2-4">A. Agent requests to access protected resources on behalf of the user.<a href="#section-4.2-4" class="pilcrow">¶</a></p>
-<p id="section-4.2-5">B. Client initiates Authorization Request via user-agent, including requested_agent and PKCE challenge.<a href="#section-4.2-5" class="pilcrow">¶</a></p>
-<p id="section-4.2-6">C. User-agent is redirected to the Authorization Server's authorization endpoint.<a href="#section-4.2-6" class="pilcrow">¶</a></p>
-<p id="section-4.2-7">D. User authenticates and grants consent for the specific agent and requested scopes at the Authorization Server.<a href="#section-4.2-7" class="pilcrow">¶</a></p>
-<p id="section-4.2-8">E. Authorization Server issues Authorization Code and redirects user-agent back to client.<a href="#section-4.2-8" class="pilcrow">¶</a></p>
-<p id="section-4.2-9">F. Client receives the code.<a href="#section-4.2-9" class="pilcrow">¶</a></p>
-<p id="section-4.2-10">G. Client requests Access Token using the <code>urn:ietf:params:oauth:grant-type:agent-authorization_code</code> grant type, presenting the code, PKCE verifier, and its Agent Token.<a href="#section-4.2-10" class="pilcrow">¶</a></p>
-<p id="section-4.2-11">H. Authorization Server validates the request (code, verifier, and agent token) and issues the Access Token.<a href="#section-4.2-11" class="pilcrow">¶</a></p>
-<p id="section-4.2-12">I. Client accesses protected resources using the Access Token.<a href="#section-4.2-12" class="pilcrow">¶</a></p>
-<p id="section-4.2-13">J. Resource Server validates the token (e.g., by verifying the signature and claims offline).<a href="#section-4.2-13" class="pilcrow">¶</a></p>
-<p id="section-4.2-14">K. Resource Server processes the request and returns the requested resource.<a href="#section-4.2-14" class="pilcrow">¶</a></p>
-<p id="section-4.2-15">L. Agent receives the resource data.<a href="#section-4.2-15" class="pilcrow">¶</a></p>
+<p id="section-3.1-6">The steps in the sequence diagram are as follows:<a href="#section-3.1-6" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-3.1-7">
+<li id="section-3.1-7.1">
+            <p id="section-3.1-7.1.1">Actor signals its intent to the Client, providing its identifier (ActorID).<a href="#section-3.1-7.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-7.2">
+            <p id="section-3.1-7.2.1">Client attempts to access protected resources on the Resource Server.<a href="#section-3.1-7.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-7.3">
+            <p id="section-3.1-7.3.1">If access is unsuccessful with token validation, the Resource Server challenges the Client with a WWW-Authenticate header indicating the invalid token error.<a href="#section-3.1-7.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-7.4">
+            <p id="section-3.1-7.4.1">Client redirects the User-Agent to the Authorization Server's authorization endpoint, including requested_actor and PKCE challenge.<a href="#section-3.1-7.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-7.5">
+            <p id="section-3.1-7.5.1">User-Agent makes the Authorization Request to the Authorization Server.<a href="#section-3.1-7.5.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-7.6">
+            <p id="section-3.1-7.6.1">User authenticates and grants consent.<a href="#section-3.1-7.6.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-7.7">
+            <p id="section-3.1-7.7.1">If access is unsuccessful with insufficient scopes, the Resource Server challenges the Client with a WWW-Authenticate header indicating the insufficient scope error.<a href="#section-3.1-7.7.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-7.8">
+            <p id="section-3.1-7.8.1">Client redirects the User-Agent to the Authorization Server's authorization endpoint, including requested_actor and PKCE challenge.<a href="#section-3.1-7.8.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-7.9">
+            <p id="section-3.1-7.9.1">User-Agent makes the Authorization Request to the Authorization Server.<a href="#section-3.1-7.9.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-7.10">
+            <p id="section-3.1-7.10.1">User grants consent.<a href="#section-3.1-7.10.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-7.11">
+            <p id="section-3.1-7.11.1">Authorization Server redirects the User-Agent back to the Client's redirect_uri with an Authorization Code.<a href="#section-3.1-7.11.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-7.12">
+            <p id="section-3.1-7.12.1">Client receives the Authorization Code via the User-Agent redirect.<a href="#section-3.1-7.12.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-7.13">
+            <p id="section-3.1-7.13.1">Client requests an Access Token from the Authorization Server's token endpoint, including the Authorization Code, PKCE code_verifier, and actor_token.<a href="#section-3.1-7.13.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-7.14">
+            <p id="section-3.1-7.14.1">Authorization Server validates the request and issues an Access Token (JWT) to the Client.<a href="#section-3.1-7.14.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-7.15">
+            <p id="section-3.1-7.15.1">Client retries the action on the Resource Server using the newly obtained Access Token.<a href="#section-3.1-7.15.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-7.16">
+            <p id="section-3.1-7.16.1">Resource Server validates the Access Token and processes the request, returning the protected resource or confirming the action.<a href="#section-3.1-7.16.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
 </section>
 </div>
 </section>
 </div>
 <div id="detailed-protocol-steps">
-<section id="section-5">
+<section id="section-4">
       <h2 id="name-detailed-protocol-steps">
-<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-detailed-protocol-steps" class="section-name selfRef">Detailed Protocol Steps</a>
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-detailed-protocol-steps" class="section-name selfRef">Detailed Protocol Steps</a>
       </h2>
 <div id="user-authorization-request">
-<section id="section-5.1">
+<section id="section-4.1">
         <h3 id="name-user-authorization-request">
-<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-user-authorization-request" class="section-name selfRef">User Authorization Request</a>
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-user-authorization-request" class="section-name selfRef">User Authorization Request</a>
         </h3>
-<p id="section-5.1-1">The client initiates the flow by directing the user's user-agent to the authorization server's authorization endpoint. This request is an extension of the standard Authorization Code Grant request (Section 4.1.1 of <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>) and SHOULD include the <code>requested_agent</code> parameter.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
-<div class="alignLeft art-text artwork" id="section-5.1-2">
+<p id="section-4.1-1">The client initiates the flow by directing the user's user-agent to the authorization server's authorization endpoint. This request is the standard Authorization Code Grant request (Section 4.1.1 of <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>) and MUST include the <code>requested_actor</code> request parameter.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.1-2">
 <pre>
 GET /authorize?response_type=code&amp;
 client_id=&lt;client_id&gt;&amp;
@@ -1406,86 +1495,86 @@ scope=&lt;scope&gt;&amp;
 state=&lt;state&gt;&amp;
 code_challenge=&lt;code_challenge&gt;&amp;
 code_challenge_method=S256&amp;
-requested_agent=&lt;agent_id&gt; HTTP/1.1
-</pre><a href="#section-5.1-2" class="pilcrow">¶</a>
+requested_actor=&lt;actor_id&gt; HTTP/1.1
+</pre><a href="#section-4.1-2" class="pilcrow">¶</a>
 </div>
 <div id="parameters">
-<section id="section-5.1.1">
+<section id="section-4.1.1">
           <h4 id="name-parameters">
-<a href="#section-5.1.1" class="section-number selfRef">5.1.1. </a><a href="#name-parameters" class="section-name selfRef">Parameters</a>
+<a href="#section-4.1.1" class="section-number selfRef">4.1.1. </a><a href="#name-parameters" class="section-name selfRef">Parameters</a>
           </h4>
-<span class="break"></span><dl class="dlParallel" id="section-5.1.1-1">
-            <dt id="section-5.1.1-1.1">requested_agent:</dt>
-            <dd style="margin-left: 1.5em" id="section-5.1.1-1.2">
-              <p id="section-5.1.1-1.2.1">REQUIRED. The unique identifier of the agent for which the client is requesting delegated access on behalf of the user. This identifier MUST uniquely identify the agent within the system and MUST be understood by the Authorization Server.<a href="#section-5.1.1-1.2.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-4.1.1-1">
+            <dt id="section-4.1.1-1.1">requested_actor:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.1.1-1.2">
+              <p id="section-4.1.1-1.2.1">REQUIRED. The unique identifier of the actor for which the client is requesting delegated access on behalf of the user. This identifier MUST uniquely identify the actor within the system and MUST be understood by the Authorization Server.<a href="#section-4.1.1-1.2.1" class="pilcrow">¶</a></p>
 </dd>
             <dd class="break"></dd>
-<dt id="section-5.1.1-1.3">other parameters:</dt>
-            <dd style="margin-left: 1.5em" id="section-5.1.1-1.4">
-              <p id="section-5.1.1-1.4.1">The request MUST also include the standard OAuth 2.0 parameters such as <code>response_type</code>, <code>client_id</code>, <code>redirect_uri</code>, <code>scope</code>, <code>state</code>, and PKCE parameters (<code>code_challenge</code> and <code>code_challenge_method</code>).<a href="#section-5.1.1-1.4.1" class="pilcrow">¶</a></p>
+<dt id="section-4.1.1-1.3">other parameters:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.1.1-1.4">
+              <p id="section-4.1.1-1.4.1">The request MUST also include the standard OAuth 2.0 parameters such as <code>response_type</code>, <code>client_id</code>, <code>redirect_uri</code>, <code>scope</code>, <code>state</code>, and PKCE parameters (<code>code_challenge</code> and <code>code_challenge_method</code>).<a href="#section-4.1.1-1.4.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
 </dl>
 </section>
 </div>
 <div id="authorization-server-processing">
-<section id="section-5.1.2">
+<section id="section-4.1.2">
           <h4 id="name-authorization-server-proces">
-<a href="#section-5.1.2" class="section-number selfRef">5.1.2. </a><a href="#name-authorization-server-proces" class="section-name selfRef">Authorization Server Processing</a>
+<a href="#section-4.1.2" class="section-number selfRef">4.1.2. </a><a href="#name-authorization-server-proces" class="section-name selfRef">Authorization Server Processing</a>
           </h4>
-<p id="section-5.1.2-1">Upon receiving the authorization request, the Authorization Server MUST perform the following steps:<a href="#section-5.1.2-1" class="pilcrow">¶</a></p>
-<ol start="1" type="1" class="normal type-1" id="section-5.1.2-2">
-<li id="section-5.1.2-2.1">
-              <p id="section-5.1.2-2.1.1">Validate the request parameters according to the OAuth 2.0 Authorization Code Grant (Section 4.1.1 of <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>).<a href="#section-5.1.2-2.1.1" class="pilcrow">¶</a></p>
+<p id="section-4.1.2-1">Upon receiving the authorization request, the Authorization Server MUST perform the following steps:<a href="#section-4.1.2-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.1.2-2">
+<li id="section-4.1.2-2.1">
+              <p id="section-4.1.2-2.1.1">Validate the request parameters according to the OAuth 2.0 Authorization Code Grant (Section 4.1.1 of <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>).<a href="#section-4.1.2-2.1.1" class="pilcrow">¶</a></p>
 </li>
-            <li id="section-5.1.2-2.2">
-              <p id="section-5.1.2-2.2.1">Validate the <code>requested_agent</code>. The Authorization Server MUST verify that the provided requested_agent corresponds to a recognized agent identity. The nature of this verification is outside the scope of this document, but it might involve checking an internal registry of agents.<a href="#section-5.1.2-2.2.1" class="pilcrow">¶</a></p>
+            <li id="section-4.1.2-2.2">
+              <p id="section-4.1.2-2.2.1">Validate the <code>requested_actor</code>. The Authorization Server MUST verify that the provided requested_actor corresponds to a recognized actor identity.<a href="#section-4.1.2-2.2.1" class="pilcrow">¶</a></p>
 </li>
-            <li id="section-5.1.2-2.3">
-              <p id="section-5.1.2-2.3.1">Authorization server MAY display a consent screen to the User. This screen SHOULD clearly indicate:<a href="#section-5.1.2-2.3.1" class="pilcrow">¶</a></p>
+            <li id="section-4.1.2-2.3">
+              <p id="section-4.1.2-2.3.1">Authorization server MAY display a consent screen to the User. This screen SHOULD clearly indicate:<a href="#section-4.1.2-2.3.1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-5.1.2-2.3.2.1">
-                  <p id="section-5.1.2-2.3.2.1.1">The name or identity of the client application initiating the request.<a href="#section-5.1.2-2.3.2.1.1" class="pilcrow">¶</a></p>
+<li class="normal" id="section-4.1.2-2.3.2.1">
+                  <p id="section-4.1.2-2.3.2.1.1">The name or identity of the client application initiating the request.<a href="#section-4.1.2-2.3.2.1.1" class="pilcrow">¶</a></p>
 </li>
-                <li class="normal" id="section-5.1.2-2.3.2.2">
-                  <p id="section-5.1.2-2.3.2.2.1">The identity of the agent (requested_agent) for which delegation is being requested.<a href="#section-5.1.2-2.3.2.2.1" class="pilcrow">¶</a></p>
+                <li class="normal" id="section-4.1.2-2.3.2.2">
+                  <p id="section-4.1.2-2.3.2.2.1">The identity of the actor (requested_actor) for which delegation is being requested.<a href="#section-4.1.2-2.3.2.2.1" class="pilcrow">¶</a></p>
 </li>
-                <li class="normal" id="section-5.1.2-2.3.2.3">
-                  <p id="section-5.1.2-2.3.2.3.1">The specific scopes of access being requested.<a href="#section-5.1.2-2.3.2.3.1" class="pilcrow">¶</a></p>
+                <li class="normal" id="section-4.1.2-2.3.2.3">
+                  <p id="section-4.1.2-2.3.2.3.1">The specific scopes of access being requested.<a href="#section-4.1.2-2.3.2.3.1" class="pilcrow">¶</a></p>
 </li>
               </ul>
 </li>
           </ol>
-<p id="section-5.1.2-3">If the request is valid and the user grants consent, the Authorization Server proceeds to issue an Authorization Code. If the request is invalid, the Authorization Server returns an Error Response.<a href="#section-5.1.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.1.2-3">If the request is valid and the user grants consent, the Authorization Server proceeds to issue an Authorization Code. If the request is invalid, the Authorization Server returns an Error Response.<a href="#section-4.1.2-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="authorization-code-response">
-<section id="section-5.1.3">
+<section id="section-4.1.3">
           <h4 id="name-authorization-code-response">
-<a href="#section-5.1.3" class="section-number selfRef">5.1.3. </a><a href="#name-authorization-code-response" class="section-name selfRef">Authorization Code Response</a>
+<a href="#section-4.1.3" class="section-number selfRef">4.1.3. </a><a href="#name-authorization-code-response" class="section-name selfRef">Authorization Code Response</a>
           </h4>
-<p id="section-5.1.3-1">If the user grants consent, the Authorization Server issues an Authorization Code and redirects the user-agent back to the client's redirect_uri (if provided in the request) or a pre-registered redirect URI.<a href="#section-5.1.3-1" class="pilcrow">¶</a></p>
-<div class="alignLeft art-text artwork" id="section-5.1.3-2">
+<p id="section-4.1.3-1">If the user grants consent, the Authorization Server issues an Authorization Code and redirects the user-agent back to the client's redirect_uri (if provided in the request) or a pre-registered redirect URI.<a href="#section-4.1.3-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.1.3-2">
 <pre>
 HTTP/1.1 302 Found
 Location: &lt;redirect_uri&gt;?code=&lt;authorization_code&gt;&amp;state=&lt;state&gt;
-</pre><a href="#section-5.1.3-2" class="pilcrow">¶</a>
+</pre><a href="#section-4.1.3-2" class="pilcrow">¶</a>
 </div>
 <div id="parameters-1">
-<section id="section-5.1.3.1">
+<section id="section-4.1.3.1">
             <h5 id="name-parameters-2">
-<a href="#section-5.1.3.1" class="section-number selfRef">5.1.3.1. </a><a href="#name-parameters-2" class="section-name selfRef">Parameters</a>
+<a href="#section-4.1.3.1" class="section-number selfRef">4.1.3.1. </a><a href="#name-parameters-2" class="section-name selfRef">Parameters</a>
             </h5>
-<p id="section-5.1.3.1-1">Similar to the standard Authorization Code Grant (Section 4.1.2 of <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>), the response includes:<a href="#section-5.1.3.1-1" class="pilcrow">¶</a></p>
-<span class="break"></span><dl class="dlParallel" id="section-5.1.3.1-2">
-              <dt id="section-5.1.3.1-2.1">code:</dt>
-              <dd style="margin-left: 1.5em" id="section-5.1.3.1-2.2">
-                <p id="section-5.1.3.1-2.2.1">REQUIRED. The Authorization Code is issued by the Authorization Server. This code is a short-lived, single-use code that the client will pass to the agent.<a href="#section-5.1.3.1-2.2.1" class="pilcrow">¶</a></p>
+<p id="section-4.1.3.1-1">Similar to the standard Authorization Code Grant (Section 4.1.2 of <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>), the response includes:<a href="#section-4.1.3.1-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-4.1.3.1-2">
+              <dt id="section-4.1.3.1-2.1">code:</dt>
+              <dd style="margin-left: 1.5em" id="section-4.1.3.1-2.2">
+                <p id="section-4.1.3.1-2.2.1">REQUIRED. The Authorization Code is issued by the Authorization Server.<a href="#section-4.1.3.1-2.2.1" class="pilcrow">¶</a></p>
 </dd>
               <dd class="break"></dd>
-<dt id="section-5.1.3.1-2.3">state:</dt>
-              <dd style="margin-left: 1.5em" id="section-5.1.3.1-2.4">
-                <p id="section-5.1.3.1-2.4.1">OPTIONAL. The state parameter passed in the initial request, if present. This value MUST be included in the redirect URI to maintain state between the request and callback.<a href="#section-5.1.3.1-2.4.1" class="pilcrow">¶</a></p>
+<dt id="section-4.1.3.1-2.3">state:</dt>
+              <dd style="margin-left: 1.5em" id="section-4.1.3.1-2.4">
+                <p id="section-4.1.3.1-2.4.1">OPTIONAL. The state parameter passed in the initial request, if present. This value MUST be included in the redirect URI to maintain state between the request and callback.<a href="#section-4.1.3.1-2.4.1" class="pilcrow">¶</a></p>
 </dd>
             <dd class="break"></dd>
 </dl>
@@ -1494,87 +1583,87 @@ Location: &lt;redirect_uri&gt;?code=&lt;authorization_code&gt;&amp;state=&lt;sta
 </section>
 </div>
 <div id="error-response">
-<section id="section-5.1.4">
+<section id="section-4.1.4">
           <h4 id="name-error-response">
-<a href="#section-5.1.4" class="section-number selfRef">5.1.4. </a><a href="#name-error-response" class="section-name selfRef">Error Response</a>
+<a href="#section-4.1.4" class="section-number selfRef">4.1.4. </a><a href="#name-error-response" class="section-name selfRef">Error Response</a>
           </h4>
-<p id="section-5.1.4-1">If the request fails, the Authorization Server redirects the user-agent back to the client's redirect_uri with error parameters.<a href="#section-5.1.4-1" class="pilcrow">¶</a></p>
-<div class="alignLeft art-text artwork" id="section-5.1.4-2">
+<p id="section-4.1.4-1">If the request fails, the Authorization Server redirects the user-agent back to the client's redirect_uri with error parameters.<a href="#section-4.1.4-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.1.4-2">
 <pre>
 HTTP/1.1 302 Found
 Location: &lt;redirect_uri&gt;?error=&lt;error_code&gt;&amp;state=&lt;state&gt;
-</pre><a href="#section-5.1.4-2" class="pilcrow">¶</a>
+</pre><a href="#section-4.1.4-2" class="pilcrow">¶</a>
 </div>
 </section>
 </div>
 </section>
 </div>
 <div id="access-token-request">
-<section id="section-5.2">
+<section id="section-4.2">
         <h3 id="name-access-token-request">
-<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-access-token-request" class="section-name selfRef">Access Token Request</a>
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-access-token-request" class="section-name selfRef">Access Token Request</a>
         </h3>
-<p id="section-5.2-1">Upon receiving the Authorization Code, the client then requests an Access Token from the Authorization Server's token endpoint using the <code>urn:ietf:params:oauth:grant-type:agent-authorization_code</code> grant type.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
-<div class="alignLeft art-text artwork" id="section-5.2-2">
+<p id="section-4.2-1">Upon receiving the Authorization Code, the client then requests an Access Token from the Authorization Server's token endpoint using the authorization_code grant type with the actor_token request parameter.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.2-2">
 <pre>
 POST /token HTTP/1.1
 Host: authorization-server.com
 Content-Type: application/x-www-form-urlencoded
 
-grant_type=urn:ietf:params:oauth:grant-type:agent-authorization_code&amp;
+grant_type=authorization_code&amp;
 client_id=&lt;client_id&gt;&amp;
 code=&lt;authorization_code&gt;&amp;
 code_verifier=&lt;code_verifier&gt;&amp;
 redirect_uri=&lt;redirect_uri&gt;&amp;
-agent_token=&lt;agent_token&gt;
-</pre><a href="#section-5.2-2" class="pilcrow">¶</a>
+actor_token=&lt;actor_token&gt;
+</pre><a href="#section-4.2-2" class="pilcrow">¶</a>
 </div>
 <div id="parameters-2">
-<section id="section-5.2.1">
+<section id="section-4.2.1">
           <h4 id="name-parameters-3">
-<a href="#section-5.2.1" class="section-number selfRef">5.2.1. </a><a href="#name-parameters-3" class="section-name selfRef">Parameters</a>
+<a href="#section-4.2.1" class="section-number selfRef">4.2.1. </a><a href="#name-parameters-3" class="section-name selfRef">Parameters</a>
           </h4>
-<span class="break"></span><dl class="dlParallel" id="section-5.2.1-1">
-            <dt id="section-5.2.1-1.1">agent_token:</dt>
-            <dd style="margin-left: 1.5em" id="section-5.2.1-1.2">
-              <p id="section-5.2.1-1.2.1">REQUIRED. The agent token is used to authenticate the agent. This token MUST be a valid token issued to the agent and MUST include the <code>sub</code> claim identifying the agent.<a href="#section-5.2.1-1.2.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-4.2.1-1">
+            <dt id="section-4.2.1-1.1">actor_token:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.2.1-1.2">
+              <p id="section-4.2.1-1.2.1">REQUIRED. The actor token is used to authenticate the actor. This token MUST be a valid token issued to the actor and MUST include the <code>sub</code> claim identifying the actor.<a href="#section-4.2.1-1.2.1" class="pilcrow">¶</a></p>
 </dd>
             <dd class="break"></dd>
-<dt id="section-5.2.1-1.3">other parameters:</dt>
-            <dd style="margin-left: 1.5em" id="section-5.2.1-1.4">
-              <p id="section-5.2.1-1.4.1">The request MUST also include the standard OAuth 2.0 parameters such as <code>client_id</code>, <code>code</code>, <code>code_verifier</code>, and <code>redirect_uri</code>.<a href="#section-5.2.1-1.4.1" class="pilcrow">¶</a></p>
+<dt id="section-4.2.1-1.3">other parameters:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.2.1-1.4">
+              <p id="section-4.2.1-1.4.1">The request MUST also include the standard OAuth 2.0 parameters such as <code>client_id</code>, <code>code</code>, <code>code_verifier</code>, and <code>redirect_uri</code>.<a href="#section-4.2.1-1.4.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
 </dl>
 </section>
 </div>
 <div id="authorization-server-processing-1">
-<section id="section-5.2.2">
+<section id="section-4.2.2">
           <h4 id="name-authorization-server-process">
-<a href="#section-5.2.2" class="section-number selfRef">5.2.2. </a><a href="#name-authorization-server-process" class="section-name selfRef">Authorization Server Processing</a>
+<a href="#section-4.2.2" class="section-number selfRef">4.2.2. </a><a href="#name-authorization-server-process" class="section-name selfRef">Authorization Server Processing</a>
           </h4>
-<p id="section-5.2.2-1">Upon receiving the token request, the Authorization Server MUST perform the following steps:<a href="#section-5.2.2-1" class="pilcrow">¶</a></p>
-<ol start="1" type="1" class="normal type-1" id="section-5.2.2-2">
-<li id="section-5.2.2-2.1">
-              <p id="section-5.2.2-2.1.1">Validate the request parameters according to the OAuth 2.0 Token Endpoint (Section 4.1.3 of <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>).<a href="#section-5.2.2-2.1.1" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-1">Upon receiving the token request, the Authorization Server MUST perform the following steps:<a href="#section-4.2.2-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.2.2-2">
+<li id="section-4.2.2-2.1">
+              <p id="section-4.2.2-2.1.1">Validate the request parameters according to the OAuth 2.0 Token Endpoint (Section 4.1.3 of <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>).<a href="#section-4.2.2-2.1.1" class="pilcrow">¶</a></p>
 </li>
-            <li id="section-5.2.2-2.2">
-              <p id="section-5.2.2-2.2.1">The Authorization Server MUST verify that the agent token is valid, not expired.<a href="#section-5.2.2-2.2.1" class="pilcrow">¶</a></p>
+            <li id="section-4.2.2-2.2">
+              <p id="section-4.2.2-2.2.1">The Authorization Server MUST verify that the actor token is valid, not expired.<a href="#section-4.2.2-2.2.1" class="pilcrow">¶</a></p>
 </li>
-            <li id="section-5.2.2-2.3">
-              <p id="section-5.2.2-2.3.1">Verify that the authenticated agent identity (obtained from the Agent Token's sub claim) matches the requested_agent value that the user consented to during the initial Authorization Request and which is associated with the code.<a href="#section-5.2.2-2.3.1" class="pilcrow">¶</a></p>
+            <li id="section-4.2.2-2.3">
+              <p id="section-4.2.2-2.3.1">Verify that the authenticated actor identity (obtained from the Actor Token's sub claim) matches the requested_actor value that the user consented to during the initial Authorization Request and which is associated with the code.<a href="#section-4.2.2-2.3.1" class="pilcrow">¶</a></p>
 </li>
           </ol>
-<p id="section-5.2.2-3">If all validations pass, the Authorization Server issues an Access Token. If any validation fails, the Authorization Server returns an Error Response.<a href="#section-5.2.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-3">If all validations pass, the Authorization Server issues an Access Token. If any validation fails, the Authorization Server returns an Error Response.<a href="#section-4.2.2-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="access-token-response">
-<section id="section-5.2.3">
+<section id="section-4.2.3">
           <h4 id="name-access-token-response">
-<a href="#section-5.2.3" class="section-number selfRef">5.2.3. </a><a href="#name-access-token-response" class="section-name selfRef">Access Token Response</a>
+<a href="#section-4.2.3" class="section-number selfRef">4.2.3. </a><a href="#name-access-token-response" class="section-name selfRef">Access Token Response</a>
           </h4>
-<p id="section-5.2.3-1">If the Token Request is valid, the Authorization Server issues an Access Token to the agent. This token SHOULD be a JSON Web Token (JWT) <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>]</span> to include claims that document the delegation.<a href="#section-5.2.3-1" class="pilcrow">¶</a></p>
-<div class="alignLeft art-text artwork" id="section-5.2.3-2">
+<p id="section-4.2.3-1">If the Token Request is valid, the Authorization Server issues an Access Token to the actor. This token SHOULD be a JSON Web Token (JWT) <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>]</span> to include claims that document the delegation.<a href="#section-4.2.3-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.2.3-2">
 <pre>
 HTTP/1.1 200 OK
 Content-Type: application/json;charset=UTF-8
@@ -1587,25 +1676,25 @@ Pragma: no-cache
   "expires_in": 3600,
   "scope": "&lt;granted_scope&gt;"
 }
-</pre><a href="#section-5.2.3-2" class="pilcrow">¶</a>
+</pre><a href="#section-4.2.3-2" class="pilcrow">¶</a>
 </div>
 <div id="parameters-3">
-<section id="section-5.2.3.1">
+<section id="section-4.2.3.1">
             <h5 id="name-parameters-4">
-<a href="#section-5.2.3.1" class="section-number selfRef">5.2.3.1. </a><a href="#name-parameters-4" class="section-name selfRef">Parameters</a>
+<a href="#section-4.2.3.1" class="section-number selfRef">4.2.3.1. </a><a href="#name-parameters-4" class="section-name selfRef">Parameters</a>
             </h5>
-<p id="section-5.2.3.1-1">Similar to the standard Authorization Code Grant (Section 4.1.4 of <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>)<a href="#section-5.2.3.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.3.1-1">Similar to the standard Authorization Code Grant (Section 4.1.4 of <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span>)<a href="#section-4.2.3.1-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
 </div>
 <div id="error-response-1">
-<section id="section-5.2.4">
+<section id="section-4.2.4">
           <h4 id="name-error-response-2">
-<a href="#section-5.2.4" class="section-number selfRef">5.2.4. </a><a href="#name-error-response-2" class="section-name selfRef">Error Response</a>
+<a href="#section-4.2.4" class="section-number selfRef">4.2.4. </a><a href="#name-error-response-2" class="section-name selfRef">Error Response</a>
           </h4>
-<p id="section-5.2.4-1">If the request is invalid, the Authorization Server returns an error response with an HTTP 400 (Bad Request) status code.<a href="#section-5.2.4-1" class="pilcrow">¶</a></p>
-<div class="alignLeft art-text artwork" id="section-5.2.4-2">
+<p id="section-4.2.4-1">If the request is invalid, the Authorization Server returns an error response with an HTTP 400 (Bad Request) status code.<a href="#section-4.2.4-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.2.4-2">
 <pre>
 HTTP/1.1 400 Bad Request
 Content-Type: application/json;charset=UTF-8
@@ -1615,32 +1704,30 @@ Pragma: no-cache
 {
   "error": "invalid_grant"
 }
-</pre><a href="#section-5.2.4-2" class="pilcrow">¶</a>
-</div>
-</section>
+</pre><a href="#section-4.2.4-2" class="pilcrow">¶</a>
 </div>
 </section>
 </div>
 </section>
 </div>
 <div id="access-token-structure-and-claims">
-<section id="section-6">
-      <h2 id="name-access-token-structure-and-">
-<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-access-token-structure-and-" class="section-name selfRef">Access Token Structure and Claims</a>
-      </h2>
-<p id="section-6-1">The Access Token SHOULD be a JWT Profile for OAuth 2.0 Access Tokens <span>[<a href="#RFC9068" class="cite xref">RFC9068</a>]</span>. It SHOULD carry claims that explicitly document the delegation chain.<a href="#section-6-1" class="pilcrow">¶</a></p>
-<p id="section-6-2">In addition to standard JWT claims (e.g., iss, aud, exp, iat, jti), an Access Token issued via this flow MUST contain the following claims:<a href="#section-6-2" class="pilcrow">¶</a></p>
-<span class="break"></span><dl class="dlParallel" id="section-6-3">
-        <dt id="section-6-3.1">act:</dt>
-        <dd style="margin-left: 1.5em" id="section-6-3.2">
-          <p id="section-6-3.2.1">REQUIRED. Actor - represents the party acting on behalf of the subject (Section 4.1 of <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span>). In an Access Token issued via this flow, this claim MUST contain a JSON object with at least the following member:
-* sub: REQUIRED. The unique identifier of the Agent that is acting on behalf of the user.
-* Additional members MAY be included in the act claim.<a href="#section-6-3.2.1" class="pilcrow">¶</a></p>
+<section id="section-4.3">
+        <h3 id="name-access-token-structure-and-">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-access-token-structure-and-" class="section-name selfRef">Access Token Structure and Claims</a>
+        </h3>
+<p id="section-4.3-1">The Access Token SHOULD be a JWT Profile for OAuth 2.0 Access Tokens <span>[<a href="#RFC9068" class="cite xref">RFC9068</a>]</span>. It SHOULD carry claims that explicitly document the delegation chain.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2">In addition to standard JWT claims (e.g., iss, aud, exp, iat, jti), an Access Token issued via this flow MUST contain the following claims:<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-4.3-3">
+          <dt id="section-4.3-3.1">act:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.3-3.2">
+            <p id="section-4.3-3.2.1">REQUIRED. Actor - represents the party acting on behalf of the subject (Section 4.1 of <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span>). In an Access Token issued via this flow, this claim MUST contain a JSON object with at least the following member:
+* sub: REQUIRED. The unique identifier of the actor that is acting on behalf of the user.
+* Additional members MAY be included in the act claim.<a href="#section-4.3-3.2.1" class="pilcrow">¶</a></p>
 </dd>
-      <dd class="break"></dd>
+        <dd class="break"></dd>
 </dl>
-<p id="section-6-4">Example Decoded JWT Payload:<a href="#section-6-4" class="pilcrow">¶</a></p>
-<div class="alignLeft art-text artwork" id="section-6-5">
+<p id="section-4.3-4">Example Decoded JWT Payload:<a href="#section-4.3-4" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.3-5">
 <pre>
 {
   "iss": "https://authorization-server.com/oauth2/token",
@@ -1652,117 +1739,170 @@ Pragma: no-cache
   "iat": 1746006296,
   "jti": "unique-token-id",
   "act": {
-    "sub": "agent-finance-v1",
-    "aut": "APPLICATION_AGENT"
+    "sub": "actor-finance-v1"
   },
   "aut": "APPLICATION_USER"
 }
-</pre><a href="#section-6-5" class="pilcrow">¶</a>
+</pre><a href="#section-4.3-5" class="pilcrow">¶</a>
 </div>
-<p id="section-6-6">Resource Servers consuming this token can inspect the <code>sub</code> claim to identify the user and the act.sub claim to identify the specific agent that is performing the action. This provides a clear and auditable delegation path.<a href="#section-6-6" class="pilcrow">¶</a></p>
+<p id="section-4.3-6">Resource Servers consuming this token can inspect the <code>sub</code> claim to identify the user and the act.sub claim to identify the specific actor that is performing the action. This provides a clear and auditable delegation path.<a href="#section-4.3-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="resource-server-challenge">
+<section id="section-4.4">
+        <h3 id="name-resource-server-challenge">
+<a href="#section-4.4" class="section-number selfRef">4.4. </a><a href="#name-resource-server-challenge" class="section-name selfRef">Resource Server Challenge</a>
+        </h3>
+<p id="section-4.4-1">The authorization flow is often triggered by a resource server challenge, such as an HTTP 401 (Unauthorized) or 403 (Forbidden) response, indicating a missing, invalid, or insufficient access token. This prompts the client to initiate the authorization process to obtain user consent and a valid token.<a href="#section-4.4-1" class="pilcrow">¶</a></p>
+<p id="section-4.4-2">When the client, prompted by an actor or speculatively, requests a protected resource, it includes an access token in the Authorization header if available. If the token is invalid or lacks required scopes or delegation claims, the resource server returns a challenge with a WWW-Authenticate header (e.g., error="invalid_token" or error="insufficient_scope"). The client then redirects the user's user-agent to the authorization server's authorization endpoint to obtain an authorization code.<a href="#section-4.4-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.4-3">
+<pre>
+GET /some/protected/resource HTTP/1.1
+Host: resource-server.com
+Authorization: Bearer &lt;existing_access_token_if_any&gt;
+</pre><a href="#section-4.4-3" class="pilcrow">¶</a>
+</div>
+<div id="resource-server-processing">
+<section id="section-4.4.1">
+          <h4 id="name-resource-server-processing">
+<a href="#section-4.4.1" class="section-number selfRef">4.4.1. </a><a href="#name-resource-server-processing" class="section-name selfRef">Resource Server Processing</a>
+          </h4>
+<p id="section-4.4.1-1">Upon receiving the request, the Resource Server MUST validate the Access Token (if provided). This validation includes:<a href="#section-4.4.1-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.4.1-2">
+<li id="section-4.4.1-2.1">
+              <p id="section-4.4.1-2.1.1">Ensuring the token is present if required.<a href="#section-4.4.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-4.4.1-2.2">
+              <p id="section-4.4.1-2.2.1">Verifying the token's signature, issuer, and audience.<a href="#section-4.4.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-4.4.1-2.3">
+              <p id="section-4.4.1-2.3.1">Checking if the token is expired or revoked.<a href="#section-4.4.1-2.3.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-4.4.1-2.4">
+              <p id="section-4.4.1-2.4.1">Confirming the token contains the necessary scopes for the requested action.<a href="#section-4.4.1-2.4.1" class="pilcrow">¶</a></p>
+</li>
+            <li id="section-4.4.1-2.5">
+              <p id="section-4.4.1-2.5.1">If the resource requires action on behalf of a specific Actor, verifying the token contains the appropriate delegation claims (e.g., an act claim) for that Actor.<a href="#section-4.4.1-2.5.1" class="pilcrow">¶</a></p>
+</li>
+          </ol>
+<p id="section-4.4.1-3">If the Access Token is missing, invalid, or insufficient for the requested action, the Resource Server MUST return an error response, typically an HTTP 400 (Bad Request), HTTP 401 (Unauthorized) or HTTP 403 (Forbidden), including a WWW-Authenticate header.<a href="#section-4.4.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="the-www-authenticate-response-header-field">
+<section id="section-4.4.2">
+          <h4 id="name-the-www-authenticate-respon">
+<a href="#section-4.4.2" class="section-number selfRef">4.4.2. </a><a href="#name-the-www-authenticate-respon" class="section-name selfRef">The WWW-Authenticate Response Header Field</a>
+          </h4>
+<p id="section-4.4.2-1">The Resource Server MUST include a WWW-Authenticate header field in the response to indicate the reason for the challenge. This header field MUST include the error code and other relevant information.<a href="#section-4.4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.4.2-2">Example:<a href="#section-4.4.2-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.4.2-3">
+<pre>
+HTTP/1.1 403 Forbidden
+WWW-Authenticate: Bearer error="insufficient_scope", error_description="The access token does not have the required scope(s)", required_scope="scope1 scope2"
+Content-Type: application/json;charset=UTF-8
+
+{
+  "error": "insufficient_scope",
+  "error_description": "The access token does not have the required scope(s)",
+  "required_scope": "scope1 scope2"
+}
+</pre><a href="#section-4.4.2-3" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
 </section>
 </div>
 <div id="security-considerations">
-<section id="section-7">
+<section id="section-5">
       <h2 id="name-security-considerations">
-<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
       </h2>
-<span class="break"></span><dl class="dlParallel" id="section-7-1">
-        <dt id="section-7-1.1">Agent Authentication:</dt>
-        <dd style="margin-left: 1.5em" id="section-7-1.2">
-          <p id="section-7-1.2.1">The security of this flow relies heavily on the Authorization Server's ability to securely authenticate the agent during the Token Request using the Agent Token. The method by which agents obtain and secure their Agent Tokens is critical and outside the scope of this specification, but MUST be implemented securely.<a href="#section-7-1.2.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-5-1">
+        <dt id="section-5-1.1">Actor Authentication:</dt>
+        <dd style="margin-left: 1.5em" id="section-5-1.2">
+          <p id="section-5-1.2.1">The security of this flow relies heavily on the Authorization Server's ability to securely authenticate the actor during the Token Request using the Actor Token. The method by which actors obtain and secure their Actor Tokens is critical and outside the scope of this specification, but MUST be implemented securely.<a href="#section-5-1.2.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
-<dt id="section-7-1.3">Proof Key for Code Exchange (PKCE):</dt>
-        <dd style="margin-left: 1.5em" id="section-7-1.4">
-          <p id="section-7-1.4.1">PKCE <span>[<a href="#RFC7636" class="cite xref">RFC7636</a>]</span> is REQUIRED to prevent authorization code interception attacks, especially relevant if the client (and thus the agent receiving the code) is a public client or runs in an environment where the redirect URI cannot be strictly protected.<a href="#section-7-1.4.1" class="pilcrow">¶</a></p>
+<dt id="section-5-1.3">Proof Key for Code Exchange (PKCE):</dt>
+        <dd style="margin-left: 1.5em" id="section-5-1.4">
+          <p id="section-5-1.4.1">PKCE <span>[<a href="#RFC7636" class="cite xref">RFC7636</a>]</span> is REQUIRED to prevent authorization code interception attacks, especially relevant if the client (and thus the actor receiving the code) is a public client or runs in an environment where the redirect URI cannot be strictly protected.<a href="#section-5-1.4.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
-<dt id="section-7-1.5">Single-Use and Short-Lived Authorization Codes:</dt>
-        <dd style="margin-left: 1.5em" id="section-7-1.6">
-          <p id="section-7-1.6.1">Authorization Codes MUST be single-use and have a short expiration time to minimize the window for compromise.<a href="#section-7-1.6.1" class="pilcrow">¶</a></p>
+<dt id="section-5-1.5">Single-Use and Short-Lived Authorization Codes:</dt>
+        <dd style="margin-left: 1.5em" id="section-5-1.6">
+          <p id="section-5-1.6.1">Authorization Codes MUST be single-use and have a short expiration time to minimize the window for compromise.<a href="#section-5-1.6.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
-<dt id="section-7-1.7">Binding Code to Agent and Client:</dt>
-        <dd style="margin-left: 1.5em" id="section-7-1.8">
-          <p id="section-7-1.8.1">The Authorization Server MUST bind the Authorization Code to the specific user, client (client_id), and requested agent (requested_agent) during issuance and verify this binding during the Token Request.<a href="#section-7-1.8.1" class="pilcrow">¶</a></p>
+<dt id="section-5-1.7">Binding Code to Actor and Client:</dt>
+        <dd style="margin-left: 1.5em" id="section-5-1.8">
+          <p id="section-5-1.8.1">The Authorization Server MUST bind the Authorization Code to the specific user, client (client_id), and requested actor (requested_actor) during issuance and verify this binding during the Token Request.<a href="#section-5-1.8.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
-<dt id="section-7-1.9">Clear User Consent:</dt>
-        <dd style="margin-left: 1.5em" id="section-7-1.10">
-          <p id="section-7-1.10.1">The consent screen presented to the user SHOULD clearly identify the agent and the requested scopes to ensure the user understands exactly what authority they are delegating and to whom.<a href="#section-7-1.10.1" class="pilcrow">¶</a></p>
+<dt id="section-5-1.9">Clear User Consent:</dt>
+        <dd style="margin-left: 1.5em" id="section-5-1.10">
+          <p id="section-5-1.10.1">The consent screen presented to the user SHOULD clearly identify the actor and the requested scopes to ensure the user understands exactly what authority they are delegating and to whom.<a href="#section-5-1.10.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
-<dt id="section-7-1.11">Auditability:</dt>
-        <dd style="margin-left: 1.5em" id="section-7-1.12">
-          <p id="section-7-1.12.1">The claims in the Access Token (sub, act) provide essential information for auditing actions performed using the token, clearly showing who (user) authorized the action, which application (client) facilitated it, and which entity (agent) performed it.<a href="#section-7-1.12.1" class="pilcrow">¶</a></p>
+<dt id="section-5-1.11">Auditability:</dt>
+        <dd style="margin-left: 1.5em" id="section-5-1.12">
+          <p id="section-5-1.12.1">The claims in the Access Token (sub, act) provide essential information for auditing actions performed using the token, clearly showing who (user) authorized the action, which application (client) facilitated it, and which entity (actor) performed it.<a href="#section-5-1.12.1" class="pilcrow">¶</a></p>
 </dd>
       <dd class="break"></dd>
 </dl>
 </section>
 </div>
-<div id="sec-combined-references">
-<section id="section-8">
-      <h2 id="name-references">
-<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-references" class="section-name selfRef">References</a>
-      </h2>
 <div id="sec-normative-references">
-<section id="section-8.1">
-        <h3 id="name-normative-references">
-<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
-        </h3>
+<section id="section-6">
+      <h2 id="name-normative-references">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+      </h2>
 <dl class="references">
 <dt id="RFC2119">[RFC2119]</dt>
-        <dd>
+      <dd>
 <span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC6749">[RFC6749]</dt>
-        <dd>
+      <dd>
 <span class="refAuthor">Hardt, D., Ed.</span>, <span class="refTitle">"The OAuth 2.0 Authorization Framework"</span>, <span class="seriesInfo">RFC 6749</span>, <span class="seriesInfo">DOI 10.17487/RFC6749</span>, <time datetime="2012-10" class="refDate">October 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc6749">https://www.rfc-editor.org/rfc/rfc6749</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC7519">[RFC7519]</dt>
-        <dd>
+      <dd>
 <span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">N. Sakimura</span>, <span class="refTitle">"JSON Web Token (JWT)"</span>, <span class="seriesInfo">RFC 7519</span>, <span class="seriesInfo">DOI 10.17487/RFC7519</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7519">https://www.rfc-editor.org/rfc/rfc7519</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC7636">[RFC7636]</dt>
-        <dd>
+      <dd>
 <span class="refAuthor">Sakimura, N., Ed.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">N. Agarwal</span>, <span class="refTitle">"Proof Key for Code Exchange by OAuth Public Clients"</span>, <span class="seriesInfo">RFC 7636</span>, <span class="seriesInfo">DOI 10.17487/RFC7636</span>, <time datetime="2015-09" class="refDate">September 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7636">https://www.rfc-editor.org/rfc/rfc7636</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC8174">[RFC8174]</dt>
-        <dd>
+      <dd>
 <span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8174">https://www.rfc-editor.org/rfc/rfc8174</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC8693">[RFC8693]</dt>
-        <dd>
+      <dd>
 <span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Nadalin, A.</span>, <span class="refAuthor">Campbell, B., Ed.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">C. Mortimore</span>, <span class="refTitle">"OAuth 2.0 Token Exchange"</span>, <span class="seriesInfo">RFC 8693</span>, <span class="seriesInfo">DOI 10.17487/RFC8693</span>, <time datetime="2020-01" class="refDate">January 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8693">https://www.rfc-editor.org/rfc/rfc8693</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC9068">[RFC9068]</dt>
-      <dd>
+    <dd>
 <span class="refAuthor">Bertocci, V.</span>, <span class="refTitle">"JSON Web Token (JWT) Profile for OAuth 2.0 Access Tokens"</span>, <span class="seriesInfo">RFC 9068</span>, <span class="seriesInfo">DOI 10.17487/RFC9068</span>, <time datetime="2021-10" class="refDate">October 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9068">https://www.rfc-editor.org/rfc/rfc9068</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 </dl>
 </section>
 </div>
-<div id="sec-informative-references">
-<section id="section-8.2">
-        <h3 id="name-informative-references">
-<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
-        </h3>
-<dl class="references">
-<dt id="RFC7662">[RFC7662]</dt>
-      <dd>
-<span class="refAuthor">Richer, J., Ed.</span>, <span class="refTitle">"OAuth 2.0 Token Introspection"</span>, <span class="seriesInfo">RFC 7662</span>, <span class="seriesInfo">DOI 10.17487/RFC7662</span>, <time datetime="2015-10" class="refDate">October 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7662">https://www.rfc-editor.org/rfc/rfc7662</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-</dl>
-</section>
-</div>
-</section>
-</div>
 <div id="authors-addresses">
 <section id="appendix-A">
-      <h2 id="name-authors-address">
-<a href="#name-authors-address" class="section-name selfRef">Author's Address</a>
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
       </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Thilina Shashimal Senarath</span></div>
+<div dir="auto" class="left"><span class="org">WSO2</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:thilinasenarath97@gmail.com" class="email">thilinasenarath97@gmail.com</a>
+</div>
+</address>
 <address class="vcard">
         <div dir="auto" class="left"><span class="fn nameRole">Ayesha Dissanayaka</span></div>
 <div dir="auto" class="left"><span class="org">WSO2</span></div>
