@@ -2,10 +2,10 @@
 
 
 
-Network Working Group                                     A. Dissanayaka
-Internet-Draft                                                      WSO2
-Intended status: Informational                                8 May 2025
-Expires: 9 November 2025
+Network Working Group                                     T. S. Senarath
+Internet-Draft                                            A. Dissanayaka
+Intended status: Informational                                      WSO2
+Expires: 9 November 2025                                      8 May 2025
 
 
    OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents
@@ -81,7 +81,7 @@ Table of Contents
        4.4.2.  The WWW-Authenticate Response Header Field
    5.  Security Considerations
    6.  Normative References
-   Author's Address
+   Authors' Addresses
 
 1.  Introduction
 
@@ -706,7 +706,12 @@ Content-Type: application/json;charset=UTF-8
               Access Tokens", RFC 9068, DOI 10.17487/RFC9068, October
               2021, <https://www.rfc-editor.org/rfc/rfc9068>.
 
-Author's Address
+Authors' Addresses
+
+   Thilina Shashimal Senarath
+   WSO2
+   Email: thilinasenarath97@gmail.com
+
 
    Ayesha Dissanayaka
    WSO2
