@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2025-05-08T00:18:27.277907+00:00",
+  "timestamp": "2025-05-11T00:19:46.394315+00:00",
   "repo": "shashimalcse/oauth-ai-agents",
   "labels": [
     {
@@ -97,6 +97,128 @@
               "updatedAt": "2025-05-03T13:01:51Z"
             }
           ]
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "id": "PR_kwDOOjSdX86VZ2Gp",
+      "title": "Revisit the flow",
+      "url": "https://github.com/shashimalcse/oauth-ai-agents/pull/2",
+      "state": "MERGED",
+      "author": "shashimalcse",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2025-05-08T09:40:10Z",
+      "updatedAt": "2025-05-08T10:06:17Z",
+      "baseRepository": "shashimalcse/oauth-ai-agents",
+      "baseRefName": "main",
+      "baseRefOid": "306936170760f67eaa53f821699d1ec3c0f56d9e",
+      "headRepository": "shashimalcse/oauth-ai-agents",
+      "headRefName": "shashimalcse-patch-0004",
+      "headRefOid": "052ec03b802ecd5a43e2745d4409f3f752364990",
+      "closedAt": "2025-05-08T10:06:17Z",
+      "mergedAt": "2025-05-08T10:06:17Z",
+      "mergedBy": "shashimalcse",
+      "mergeCommit": {
+        "oid": "ab096969e3e6e6c013770f72c22434427bf8b323"
+      },
+      "comments": [],
+      "reviews": [
+        {
+          "id": "PRR_kwDOOjSdX86oWlY-",
+          "commit": {
+            "abbreviatedOid": "d6c2d8f"
+          },
+          "author": "copilot-pull-request-reviewer",
+          "authorAssociation": "NONE",
+          "state": "COMMENTED",
+          "body": "## Pull Request Overview\n\nThis PR revisits the OAuth extension flow, replacing the term \"agent\" with \"actor\" to clarify role responsibilities during delegated authorization.  \n- Update parameter names and token descriptions from agent to actor  \n- Revise protocol steps and sequence diagram to reflect the new terminology and flow  \n- Improve overall documentation clarity\n\n\n\n",
+          "createdAt": "2025-05-08T09:40:45Z",
+          "updatedAt": "2025-05-08T09:40:46Z",
+          "comments": [
+            {
+              "originalPosition": 82,
+              "body": "Consider correcting 'genaric' to 'generic' for clarity.\n```suggestion\n: The server hosting the protected resources, capable of accepting and validating access tokens. In context of AI applications, resource server can be a model context protocol (MCP) server, another agent or generic protected resource.\n```",
+              "createdAt": "2025-05-08T09:40:45Z",
+              "updatedAt": "2025-05-08T09:40:46Z"
+            }
+          ]
+        },
+        {
+          "id": "PRR_kwDOOjSdX86oWpKr",
+          "commit": {
+            "abbreviatedOid": "d6c2d8f"
+          },
+          "author": "pavinduLakshan",
+          "authorAssociation": "NONE",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2025-05-08T09:45:23Z",
+          "updatedAt": "2025-05-08T09:45:23Z",
+          "comments": [
+            {
+              "originalPosition": 29,
+              "body": "can we generalize \"ai agents\" if possible? the reason is that it gives the first impression that spec is tightly coupled with the ai agent specific behaviour. WDYT about using a term such as \"intelligent non-human identities\" or something like that and then provide AI agents as example?",
+              "createdAt": "2025-05-08T09:45:23Z",
+              "updatedAt": "2025-05-08T09:45:23Z"
+            }
+          ]
+        },
+        {
+          "id": "PRR_kwDOOjSdX86oWrNl",
+          "commit": {
+            "abbreviatedOid": "d6c2d8f"
+          },
+          "author": "pavinduLakshan",
+          "authorAssociation": "NONE",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2025-05-08T09:47:35Z",
+          "updatedAt": "2025-05-08T09:47:35Z",
+          "comments": [
+            {
+              "originalPosition": 43,
+              "body": "shall we use a generic term for \"agent delegation\"?",
+              "createdAt": "2025-05-08T09:47:35Z",
+              "updatedAt": "2025-05-08T09:47:35Z"
+            }
+          ]
+        },
+        {
+          "id": "PRR_kwDOOjSdX86oWwEP",
+          "commit": {
+            "abbreviatedOid": "052ec03"
+          },
+          "author": "pavinduLakshan",
+          "authorAssociation": "NONE",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2025-05-08T09:51:50Z",
+          "updatedAt": "2025-05-08T09:51:50Z",
+          "comments": [
+            {
+              "originalPosition": 29,
+              "body": "On a second thought, wdyt of generalizing this for any actor (eg: an actor (human user, ai agent, bot etc) requesting delegated access to a resource on behalf of another actor)",
+              "createdAt": "2025-05-08T09:51:50Z",
+              "updatedAt": "2025-05-08T09:51:50Z"
+            }
+          ]
+        },
+        {
+          "id": "PRR_kwDOOjSdX86oW527",
+          "commit": {
+            "abbreviatedOid": "052ec03"
+          },
+          "author": "pavinduLakshan",
+          "authorAssociation": "NONE",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2025-05-08T10:00:51Z",
+          "updatedAt": "2025-05-08T10:00:51Z",
+          "comments": []
         }
       ]
     }
