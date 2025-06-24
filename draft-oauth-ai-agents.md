@@ -329,7 +329,7 @@ In this scenario, an agent performs actions on behalf of a user. It obtains a to
 } 
 ~~~
 
-## Delegated Action Between Agents
+## A.3. Delegated Action Between Agents
 
 This example illustrates a scenario where one agent delegates a task to another agent using the OAuth 2.0 Token Exchange. The client_id claim indicates the current actor. The act claim is used to encode a delegation chain. The top-level sub represents the user on whose behalf the action is ultimately being taken.
 
