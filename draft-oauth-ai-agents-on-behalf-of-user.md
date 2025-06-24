@@ -52,6 +52,7 @@ normative:
   RFC7591:
   RFC7592:
   RFC7636:
+  RFC7800:
   RFC8174:
   RFC8693:
   RFC9068:
@@ -159,10 +160,14 @@ sub_parent (Subject Parent App):
 client_parent (Client Parent App):
 : RECOMMENDED. Identifies the Agent Application of the Agent identified by the client_id claim. The client_parent claim SHOULD be present only if the client_entity_type claim has the value "agent". Otherwise, this claim MUST NOT be included.
 
+The sub_parent and client_parent claims are used to represent the owning or parent application of the subject (sub) and client (client_id), respectively. These claims help link an agent instance to the broader application or deployment it belongs to, supporting policy decisions and traceability. They SHOULD be included when the subject or client is an agent instance to enable clear relationships between agents and their controlling applications.
+
 Authorization Servers MAY include the act (Actor) claim to explicitly represent delegation chains. To control token size and ensure predictable processing time at Resource Servers, Authorization Servers MAY limit the depth of nested act structures.
 
 act (Actor):
 : RECOMMENDED. Identifies the Agent currently performing the action (typically the same as the client_id). This claim is used to represent delegation chains where Agents act on behalf of others using Token Exchange ({{RFC8693}}).
+
+Authorization Servers SHOULD impose practical limits on the nesting depth of the act claim to prevent token size bloat and ensure efficient validation by Resource Servers. While no fixed limit is mandated, a typical recommendation is to restrict the chain to 3–5 delegation levels, balancing expressiveness and performance.
 
 ## Example decoded JWT payload
 
@@ -201,6 +206,10 @@ It is RECOMMENDED that Authorization Servers log all Agent-related actions and a
 
 Authorization Servers MAY implement additional security controls such as rate limiting, IP allowlisting, or other measures to mitigate the risk of Agent misuse.
 
+## User Consent Experience
+
+Authorization Servers SHOULD clearly communicate to end-users the identity of the acting agent, the permissions requested, and the implications of consent (where applicable) during authorization prompts. Consent screens should be designed to be understandable, minimizing ambiguity about which agent is requesting access and what actions it may perform on the user’s behalf.
+
 # Resource Server Behavior
 
 Resource Servers MUST validate access tokens and their claims prior to granting access to protected resources. They SHOULD log all access attempts to support auditing and security.
@@ -237,6 +246,9 @@ Scope Minimization and Principle of Least Privilege:
 
 Token Revocation and Expiration:
 : Access Tokens MUST have bounded lifetimes, and Authorization Servers MUST offer mechanisms to revoke tokens (e.g., via token revocation endpoint as per {{RFC7009}}). This is especially useful when an Agent is suspected to be compromised or misbehaving.
+
+Token Binding and Replay Protection:
+: To mitigate replay attacks and unauthorized token use, Authorization Servers and Clients SHOULD implement token binding mechanisms, such as those described in {{RFC7800}} (OAuth 2.0 Token Binding). Binding tokens cryptographically to the client or agent instance ensures tokens cannot be reused by malicious actors. Resource Servers SHOULD validate token bindings where supported.
 
 Delegation Risks:
 : Authorization Servers and Resource Servers SHOULD validate delegation, ensuring that agents only act within the bounds of their delegated authority. This includes validating the act claim and ensuring that the agent has the necessary permissions to perform the requested actions on behalf of the user or another agent.
