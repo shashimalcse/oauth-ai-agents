@@ -1,9 +1,9 @@
 ---
-title: "OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents"
-abbrev: "OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents"
+title: "OAuth 2.0 Extension: Authorization for AI Agents"
+abbrev: "OAuth 2.0 Extension: Authorization for AI Agents"
 category: info
 
-docname: draft-oauth-ai-agents-on-behalf-of-user-01
+docname: draft-oauth-ai-agents-02
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
@@ -16,6 +16,8 @@ keyword:
  - authorization
  - actor
  - obo
+ - oauth
+ - agent-identity
 
 author:
  -
@@ -26,454 +28,317 @@ author:
     fullname: Ayesha Dissanayaka
     organization: WSO2
     email: ayshsandu@gmail.com
+ -
+    fullname: Adrian Frei
+    organization: Microsoft
+    email: adfrei@microsoft.com
+ -  
+    fullname: Brandon Werner
+    organization: Microsoft
+    email: Brandon.Werner@microsoft.com
+ -
+    fullname: Diana Smetters
+    organization: Microsoft
+    email: diana.smetters@microsoft.com
+ -  
+    fullname: Sreyantha Chary Mora
+    organization: Microsoft
+    email: sreyanthmora@microsoft.com
 
 normative:
   RFC2119:
   RFC6749:
   RFC7519:
+  RFC7591:
+  RFC7592:
   RFC7636:
   RFC8174:
   RFC8693:
   RFC9068:
+  RFC9396:
 
 --- abstract
 
-This specification extends the OAuth 2.0 Authorization Framework {{RFC6749}} to enable AI agents to securely obtain access tokens for acting on behalf of users. It introduces the **requested_actor** parameter in authorization requests to identify the specific agent requiring delegation and the **actor_token** parameter in token requests to authenticate the agent during the exchange of an authorization code for an access token. The flow can be initiated by a resource server challenge, ensuring that user consent is obtained dynamically when access is attempted. This extension ensures secure delegation with explicit user consent, streamlines the authorization flow, and enhances auditability through access token claims that document the delegation chain from the user to the agent via a client application.
+This document outlines how AI agents can use OAuth 2.0 for secure authentication and authorization when acting autonomously or on behalf of others, building on existing OAuth 2.0 features with attention to security and clear delegation in AI workflows. This draft proposes new claims to describe the subject and actor/client.
 
 --- middle
 
 # Introduction
 
-AI agents are increasingly common in systems, performing tasks on behalf of users. These agents often need access to protected resources, requiring a secure and robust authorization mechanism that clearly reflects the user's intent and the agent's role in the access request.
+AI agents are increasingly used to perform tasks for humans or systems, often needing secure access to protected resources. This document discusses applying OAuth 2.0 to AI agents, focusing on security, precise delegation, and traceability. No new grant types or protocols are introduced; instead, existing OAuth 2.0 flows such as the Authorization Code Grant (see {{RFC6749|Section 4.1}}), the Client Credentials Grant (see {{RFC6749|Section 4.4}}), and Token Exchange {{RFC8693}} are adapted for AI agent scenarios.
 
-Standard OAuth 2.0 flows, such as the Authorization Code Grant and the Client Credentials Grant {{RFC6749}}, do not fully address the complexities of agent delegation. They lack specific mechanisms to obtain explicit user consent for an agent's actions or to treat the agent as a distinct identity during the token exchange process.
-
-The OAuth 2.0 Token Exchange specification {{RFC8693}} provides a framework for token exchange, but it is primarily designed for server-side communication or impersonation scenarios. It does not natively support obtaining explicit user consent for an agent via the front channel from the authorization endpoint. Furthermore, {{RFC8693}} does not specify how to acquire the subject token, adding complexity to the delegation process.
-
-To overcome these limitations, this specification extends the OAuth 2.0 Authorization Code Grant flow to enable user-delegated authorization for AI agents. It introduces the following enhancements:
-
-1. The **requested_actor** parameter at the authorization endpoint, allowing the client to specify the agent for which delegation is requested.
-
-2. The **actor_token** parameter at the token endpoint, enabling the agent to authenticate itself when exchanging a user-approved authorization code for an access token.
-
-3. Detailed claims in the resulting access token, capturing the identities of the user, agent, and client application for transparency and auditability.
-
-This approach builds on existing OAuth 2.0 infrastructure to deliver a secure, simplified, and user-centric delegation process tailored for AI agents.
+## Requirements Notation and Conventions
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 {{RFC2119}} {{RFC8174}} when, and only when, they appear in all capitals, as shown here.
 
-# Terminology
+## Terminology
 
-This specification uses the following terms:
+The terms "User", "Client", "Authorization Server", "Resource Server", and "Access Token" are defined in {{RFC6749|Section 1.1}}. This document also uses the following terms:
 
-Actor:
-: An entity that acts on behalf of a user. In context of AI applications, the actor is the agent that performs actions on behalf of the user.
+Agent Application: : Software that performs agent tasks; it can be standalone, web-based, or a service acting for users or systems.
 
-Client:
-: An application that initiates the authorization flow and facilitates the interaction between the user, actor, and authorization server. This is the "client" as defined in OAuth 2.0 {{RFC6749}}.
+Agent: : A registered OAuth client accessing protected resources for another entity, often as an automated system or application; usually linked to an agent application.
 
-User:
-: The resource owner who grants consent for an actor to access their protected resources.
+Agent Identity: : A unique identifier distinguishing each Agent Application and Agent from others. This can be used as the subject identity in tokens for that agent.
 
-Authorization Server:
-: The server that issues access tokens to the client and actor after successfully authenticating a resource owner and obtaining authorization.
+# Motivation
 
-Resource Server:
-: The server hosting the protected resources, capable of accepting and validating access tokens. In context of AI applications, resource server can be a model context protocol (MCP) server, another agent or genaric protected resource.
+AI agents are now used for complex tasks in many settings, including personal assistants and autonomous business applications. To operate effectively, these agents often need access to protected resources like APIs or user data. While OAuth 2.0 offers a strong authorization framework, it must be tailored to fit the specific needs of AI agents to ensure the Agent’s actions are secure and traceable.
 
-Authorization Code:
-: A temporary, single-use code issued by the authorization server to the client's redirect URI after the user has authenticated and granted consent for a specific actor to act on their behalf.
+## Scenarios
 
-Actor Token:
-: A security token (e.g., a JWT {{RFC7519}}) used by an actor to authenticate itself to the authorization server or resource servers. The `sub` claim of an Actor Token identifies the actor. An actor can obtain an Actor Token by authenticating itself to the authorization server using a different grant, which is not included in the scope of this specification.
+Autonomous AI Agents:
+: Operate independently without human input, like self-driving car controllers or automated network managers. These don’t operate within a user context (even though they may be associated with human owners or sponsors but aren’t acting on their behalf).
 
-Access Token:
-: An access token issued by the authorization server to an actor, permitting it to access protected resources on behalf of a specific user. This token explicitly documents the delegation path.
+Delegated Action on Behalf of Users:
+: Work within user-directed workflows, completing tasks as an extension of the user, such as scheduling assistants or information retrievers. These operate within a user context.
 
-# Protocol Overview
+Delegated Action Between Agents:
+: One agent delegates tasks to another, for instance, a booking assistant handing off flight arrangements to a specialized travel API agent.
 
-This extension defines a flow where a client application facilitates user consent for an actor, and the actor then uses this consent along with its own authentication to obtain an access token.
+# OAuth2.0 for AI Agents
 
-## High-Level Overview
+In this framework, AI agents authenticate as OAuth clients and interact with OAuth authorization servers via the typical flows (Authorization Code Flow, Client Credentials Flow, and Token Exchange Flow). The agent will be treated like any other OAuth client.
 
-1. The Actor signals to the Client that it needs to perform an action on the User's behalf, providing its identifier (ActorID)
+The key difference is that the agent's identity and the context in which it operates will be more complex, requiring additional claims and metadata to accurately represent the agent's role and permissions.
 
-2. The Client attempts the action by making a request to the Resource Server
+## Dynamic Client Registration
 
-3. If access is unsuccessful (e.g., HTTP 401 Unauthorized due to an invalid/missing token, or HTTP 403 Forbidden due to insufficient scope), Resource Server challenges the Client. 
+OAuth 2.0 Dynamic Client Registration extension ({{RFC7591}}) allows clients, including AI agents, to register with an Authorization Server dynamically. For agents to obtain client credentials and access tokens, the Authorization Server MUST support this protocol. Authorization Servers MAY limit dynamic registration to certain agent publishers or scenarios, and MUST associate a unique Agent Identity with each registered agent for identification during authorization.
 
-4.The Client initiates the authorization flow by redirecting the User's User-Agent to the Authorization Server's authorization endpoint. This request includes a requested_actor parameter (matching the ActorID).
+Authorization Servers MAY set additional requirements for agent registration (e.g., scopes, metadata, user consent) to meet security and privacy needs. They SHOULD differentiate between agents and standard OAuth clients to apply suitable policies. The DCR endpoint MAY require extra parameters to specify agent type and delegation semantics, informing appropriate security models and authorization scopes.
 
-5. The Authorization Server authenticates the User (if not already authenticated) and presents a consent screen detailing the Client, the requested_actor, and the requested scopes.
+Extending DCR and evaluating additional options for Agent registration, such as SPIFFE, are not addressed in this draft. For the purposes of this document, it is assumed that the Authorization Server supports dynamic Agent registration following a standard method, and that Agents have the capability to discover registration procedures and register themselves when required to perform an action.
 
-6. Upon User consent, the Authorization Server issues a short-lived Authorization Code (tied to the User, Client, and consented Actor) and redirects the User-Agent back to the Client's redirect_uri. 
+## Agent Identity
 
-7. The Client receives the Authorization Code via the User-Agent redirect.
+The Agent Identity uniquely identifies an agent in a system, usually as a URI or unique string linked to its credentials. Agent Identity is essential in OAuth 2.0 for secure delegation, traceability, and identity management for AI agents.
 
-8. The Client requests an Access Token from the Authorization Server's token endpoint. This request uses the standard authorization_code grant type. The request includes the Authorization Code, the PKCE code_verifier, and the actor_token (the authentication token of the Actor).
+It is used for:
 
-9. The Authorization Server validates the entire request: Authorization Code, PKCE code_verifier, and the actor_token. It ensures the actor_token corresponds to the requested_actor for whom the User granted consent (which is linked to the Authorization Code).
+* Including in access tokens issued to the agents
+* Signaling the acting agent in authorization requests
+* Tracking and attributing actions in audit logs
+* Representing the agent in delegation chains
+* Keeping track of user consent and granted permissions for specific agents
+* Enable creation of policies to govern the specific agent
+* Track the specific agent actor, even when acting on behalf of users or other agents
 
-10. Upon successful validation, the Authorization Server issues an Access Token to the Client. This token is a JWT containing claims identifying the User (e.g., sub), the Client (e.g., azp or client_id), and the Actor (e.g., act claim).
+# Access Token Structure and Claims
 
-11. The Client retries the action or performs a new action on the Resource Server using this newly obtained Access Token.
+Access tokens issued to Agents SHOULD use the JWT Profile for OAuth 2.0 Access Tokens {{RFC9068}}. They SHOULD carry claims that convey identity and explicitly document the delegation.
 
-12. If access is successful (either initially or on retry): The Resource Server validates the Access Token (including the delegation claims like act) and processes the request, returning the resource or confirming the action. 
+Authorization Servers MUST include the following claims in the access tokens issued to Agents:
 
-The Client may then pass the result to the Actor.
-## Sequence Diagram
+sub (Subject):
+: REQUIRED. Identifies the User or entity on whose behalf the Agent acts. An Agent MAY be its own subject if it is acting autonomously (even if created or associated with a human User as the Agent’s owner or sponsor).
 
-~~~ ascii-art
-    +-----------+   +--------+    +-----------+   +---------------------+    +---------------+
-    | User-Agent|   | Client |   | Act as Actor|  | Authorization Server|   | Resource Server |
-    +-----------+   +--------+    +-----------+   +---------------------+    +---------------+
-          |             |              |                   |                       |
-          |     (1) Signals need to act on User's behalf   |                       |                       
-          |             |  by passing ActorID              |                       |
-          |             |<-------------|                   |
-          |             |              |                   |                       |
-          |             |              (2) Client attempts action                  |
-          |             | -------------------------------------------------------> |
-          |             |              |                   |                       |
-    /--------------------------------- Access Unsuccessful ----------------------------------\
-    |     |             |              |                   |                       |         |
-    |------------------------------------[If Unauthorized]-----------------------------------|
-    |     |             |              |                   |                       |         |
-    |     |             |              |             +---------------------------------+     |              
-    |     |             |              |             | Token validation is failed      |     |              
-    |     |             |              |             +---------------------------------+     |             
-    |     |             |              |                   |                       |         |
-    |     |             |  (3) CHALLENGE: HTTP 401, WWW-Authenticate:              |         |
-    |     |             |           Bearer error="invalid_token"                   |         |
-    |     |             | <--------------------------------------------------------|         |
-    |     |             |              |                   |                       |         |
-    |  (4) Redirect to AS (for User Authentication and Consent)                    |         |
-    |              with requested_actor request parameter                          |         |
-    |     |<------------|              |                   |                       |         |
-    |     |             |              |                   |                       |         |
-    |     |         (5) Authorization Request              |                       |         |
-    |     |----------------------------------------------->|                       |         |
-    |     |             |              |                   |                       |         |
-    |     |     (6) User Authenticates & Consents          |                       |         |
-    |     |<---------------------------------------------->|                       |         |
-    |     |             |              |                   |                       |         |
-    |------------------------------------[If Forbidden]--------------------------------------|
-    |     |             |              |                   |                       |         |
-    |     |             |              |            +---------------------------------+      |             
-    |     |             |              |            |   Insufficient Authorization    |      |             
-    |     |             |              |            +---------------------------------+      |           
-    |     |             |              |                   |                       |         |
-    |     |               (7) CHALLENGE: HTTP 403, WWW-Authenticate:               |         |
-    |     |       Bearer error="insufficient_scope" required_scope="scope1 scope2" |         |
-    |     |             | <--------------------------------------------------------|         |
-    |     |             |              |                   |                       |         |
-    |  (8) Redirect to AS (for User Consent)               |                       |         |
-    |    with requested_actor request parameter            |                       |         |
-    |     |<------------|              |                   |                       |         |
-    |     |             |              |                   |                       |         |
-    |     |         (9) Authorization Request              |                       |         |
-    |     |----------------------------------------------->|                       |         |
-    |     |             |              |                   |                       |         |
-    |     |            (10) User Consents                  |                       |         |
-    |     |<---------------------------------------------->|                       |         |
-    |----------------------------------------------------------------------------------------|
-    |     |             |              |                   |                       |         |
-    |     | (11) Redirect with Authorization Code          |                       |         |
-    |     | <----------------------------------------------|                       |         |
-    |     |             |              |                   |                       |         |
-    |     | (12) Authorization Code    |                   |                       |         |
-    |     |------------>|              |                   |                       |         |
-    |     |             |              |                   |                       |         |
-    |     |             | (13) Token Request with actor_token request parameter    |         |
-    |     |             | ---------------------------------|                       |         |
-    |     |             |              |                   |                       |         |
-    |     |             |  (14) Access Token (JWT)         |                       |         |
-    |     |             | <--------------------------------|                       |         |
-    |     |             |              |                   |                       |         |
-    |     |             |  (15) Client Retries Action with Access Token            |         |
-    |     |             |--------------------------------------------------------->|         |
-    \----------------------------------------------------------------------------------------/
-    /------------------------------------ Access Successful ---------------------------------\
-    |     |             |              |                   |                       |         |
-    |     |             |  (16) Protected Resource / Action Succeeded              |         |
-    |     |             |<---------------------------------------------------------|         |
-    \----------------------------------------------------------------------------------------/
-~~~
+aud (Audience):
+: REQUIRED. Specifies the Resource Server that will validate the token.
 
+scope (Scope):
+: OPTIONAL. A space-separated list of OAuth scopes granted to the Agent.
 
-The steps in the sequence diagram are as follows:
+authorization_details:
+: OPTIONAL. A JSON object specifying permissions granted to the Agent, following the structure defined in Rich Authorization Requests {{RFC9396}}.
 
-1. Actor signals its intent to the Client, providing its identifier (ActorID).
+Either scope or authorization_details MUST be included in the token to specify the Agent’s permissions.
 
-2. Client attempts to access protected resources on the Resource Server.
+client_id:
+: REQUIRED. Indicates the OAuth Client to whom the token was issued. This also is the Agent ID and represents the actor performing the action.
 
-3. If access is unsuccessful with token validation, the Resource Server challenges the Client with a WWW-Authenticate header indicating the invalid token error.
+sub_entity_type (Subject Entity Type):
+: REQUIRED. Specifies the type of entity represented by the sub (Subject) claim. Its value MUST be one of "user" (indicating a human end-user), "agent" (indicating an autonomous or delegated AI agent or automated system), or "app" (indicating a standard OAuth client application not acting as an agent).
 
-4. Client redirects the User-Agent to the Authorization Server's authorization endpoint, including requested_actor and PKCE challenge.
+client_entity_type (Client Entity Type):
+: REQUIRED. Indicates the type of entity represented by the client_id claim. Its value MUST be either "agent" (for AI or automated agent clients) or "app" (for standard OAuth client applications not acting as an agent).
 
-5. User-Agent makes the Authorization Request to the Authorization Server.
+sub_parent (Subject Parent App):
+: RECOMMENDED. Identifies the subject's Agent Application when the subject (sub) is an Agent. This claim SHOULD be present only if the value of the sub_entity_type claim is "agent". In all other cases, the sub_parent claim MUST NOT be included.
 
-6. User authenticates and grants consent.
+client_parent (Client Parent App):
+: RECOMMENDED. Identifies the Agent Application of the Agent identified by the client_id claim. The client_parent claim SHOULD be present only if the client_entity_type claim has the value "agent". Otherwise, this claim MUST NOT be included.
 
-7. If access is unsuccessful with insufficient scopes, the Resource Server challenges the Client with a WWW-Authenticate header indicating the insufficient scope error.
+Authorization Servers MAY include the act (Actor) claim to explicitly represent delegation chains. To control token size and ensure predictable processing time at Resource Servers, Authorization Servers MAY limit the depth of nested act structures.
 
-8. Client redirects the User-Agent to the Authorization Server's authorization endpoint, including requested_actor and PKCE challenge.
+act (Actor):
+: RECOMMENDED. Identifies the Agent currently performing the action (typically the same as the client_id). This claim is used to represent delegation chains where Agents act on behalf of others using Token Exchange ({{RFC8693}}).
 
-9. User-Agent makes the Authorization Request to the Authorization Server.
-
-10. User grants consent.
-
-11. Authorization Server redirects the User-Agent back to the Client's redirect_uri with an Authorization Code.
-
-12. Client receives the Authorization Code via the User-Agent redirect.
-
-13. Client requests an Access Token from the Authorization Server's token endpoint, including the Authorization Code, PKCE code_verifier, and actor_token.
-
-14. Authorization Server validates the request and issues an Access Token (JWT) to the Client.
-
-15. Client retries the action on the Resource Server using the newly obtained Access Token.
-
-16. Resource Server validates the Access Token and processes the request, returning the protected resource or confirming the action.
-
-# Detailed Protocol Steps
-
-## User Authorization Request
-
-The client initiates the flow by directing the user's user-agent to the authorization server's authorization endpoint. This request is the standard Authorization Code Grant request (Section 4.1.1 of {{RFC6749}}) and MUST include the `requested_actor` request parameter.
+## Example decoded JWT payload
 
 ~~~
-GET /authorize?response_type=code&
-client_id=<client_id>&
-redirect_uri=<redirect_uri>&
-scope=<scope>&
-state=<state>&
-code_challenge=<code_challenge>&
-code_challenge_method=S256&
-requested_actor=<actor_id> HTTP/1.1
-~~~
-
-### Parameters
-
-requested_actor:
-: REQUIRED. The unique identifier of the actor for which the client is requesting delegated access on behalf of the user. This identifier MUST uniquely identify the actor within the system and MUST be understood by the Authorization Server.
-
-other parameters:
-: The request MUST also include the standard OAuth 2.0 parameters such as `response_type`, `client_id`, `redirect_uri`, `scope`, `state`, and PKCE parameters (`code_challenge` and `code_challenge_method`).
-
-### Authorization Server Processing
-
-Upon receiving the authorization request, the Authorization Server MUST perform the following steps:
-
-1. Validate the request parameters according to the OAuth 2.0 Authorization Code Grant (Section 4.1.1 of {{RFC6749}}).
-
-2. Validate the `requested_actor`. The Authorization Server MUST verify that the provided requested_actor corresponds to a recognized actor identity.
-
-3. Authorization server MAY display a consent screen to the User. This screen SHOULD clearly indicate:
-   * The name or identity of the client application initiating the request.
-   * The identity of the actor (requested_actor) for which delegation is being requested.
-   * The specific scopes of access being requested.
-
-If the request is valid and the user grants consent, the Authorization Server proceeds to issue an Authorization Code. If the request is invalid, the Authorization Server returns an Error Response.
-
-### Authorization Code Response
-
-If the user grants consent, the Authorization Server issues an Authorization Code and redirects the user-agent back to the client's redirect_uri (if provided in the request) or a pre-registered redirect URI.
-
-~~~
-HTTP/1.1 302 Found
-Location: <redirect_uri>?code=<authorization_code>&state=<state>
-~~~
-
-#### Parameters
-
-Similar to the standard Authorization Code Grant (Section 4.1.2 of {{RFC6749}}), the response includes:
-
-code:
-: REQUIRED. The Authorization Code is issued by the Authorization Server.
-
-state:
-: OPTIONAL. The state parameter passed in the initial request, if present. This value MUST be included in the redirect URI to maintain state between the request and callback.
-
-### Error Response
-
-If the request fails, the Authorization Server redirects the user-agent back to the client's redirect_uri with error parameters.
-
-~~~
-HTTP/1.1 302 Found
-Location: <redirect_uri>?error=<error_code>&state=<state>
-~~~
-
-## Access Token Request
-
-Upon receiving the Authorization Code, the client then requests an Access Token from the Authorization Server's token endpoint using the authorization_code grant type with the actor_token request parameter.
-
-~~~
-POST /token HTTP/1.1
-Host: authorization-server.com
-Content-Type: application/x-www-form-urlencoded
-
-grant_type=authorization_code&
-client_id=<client_id>&
-code=<authorization_code>&
-code_verifier=<code_verifier>&
-redirect_uri=<redirect_uri>&
-actor_token=<actor_token>
-~~~
-
-### Parameters
-
-actor_token:
-: REQUIRED. The actor token is used to authenticate the actor. This token MUST be a valid token issued to the actor and MUST include the `sub` claim identifying the actor.
-
-other parameters:
-: The request MUST also include the standard OAuth 2.0 parameters such as `client_id`, `code`, `code_verifier`, and `redirect_uri`.
-
-### Authorization Server Processing
-
-Upon receiving the token request, the Authorization Server MUST perform the following steps:
-
-1. Validate the request parameters according to the OAuth 2.0 Token Endpoint (Section 4.1.3 of {{RFC6749}}).
-
-2. The Authorization Server MUST verify that the actor token is valid, not expired.
-
-2. Verify that the authenticated actor identity (obtained from the Actor Token's sub claim) matches the requested_actor value that the user consented to during the initial Authorization Request and which is associated with the code.
-
-If all validations pass, the Authorization Server issues an Access Token. If any validation fails, the Authorization Server returns an Error Response.
-
-### Access Token Response
-
-If the Token Request is valid, the Authorization Server issues an Access Token to the actor. This token SHOULD be a JSON Web Token (JWT) {{RFC7519}} to include claims that document the delegation.
-
-~~~
-HTTP/1.1 200 OK
-Content-Type: application/json;charset=UTF-8
-Cache-Control: no-store
-Pragma: no-cache
-
-{
-  "access_token": "<delegated_access_token>",
-  "token_type": "Bearer",
-  "expires_in": 3600,
-  "scope": "<granted_scope>"
+{ 
+  "sub": "user-id-123", 
+  "sub_entity_type": "user", 
+  "aud": "https://api.example.com", 
+  "scope": "read:email write:calendar", 
+  "client_id": "agent-xyz-instance-id-456", 
+  "client_entity_type": "agent", 
+  "client_parent": "agent-xyz-app-789", 
+  "act": { 
+    "sub": "agent-xyz-instance-id-456", 
+    "sub_entity_type": "agent", 
+    "sub_parent": "agent-xyz-app-789", 
+    "act": { 
+      "sub": "agent-abc-instance-id-123", 
+      "sub_entity_type": "agent", 
+      "sub_parent": "agent-abc-app-1610" 
+    } 
+  } 
 }
 ~~~
 
-#### Parameters
+# Authorization Server Behavior  
 
-Similar to the standard Authorization Code Grant (Section 4.1.4 of {{RFC6749}})
+Authorization Servers MUST:
 
-### Error Response
+* Verify the Agent’s identity and permissions prior to issuing access tokens.
+* Confirm that the Agent is registered and authorized to act on behalf of the User or another Agent.
+* Include all required claims as specified in Section 4.
+* Provide mechanisms for users to review, manage, and revoke Agent access and consent.
 
-If the request is invalid, the Authorization Server returns an error response with an HTTP 400 (Bad Request) status code.
+It is RECOMMENDED that Authorization Servers log all Agent-related actions and access events to support auditing and accountability.
 
-~~~
-HTTP/1.1 400 Bad Request
-Content-Type: application/json;charset=UTF-8
-Cache-Control: no-store
-Pragma: no-cache
+Authorization Servers MAY implement additional security controls such as rate limiting, IP allowlisting, or other measures to mitigate the risk of Agent misuse.
 
-{
-  "error": "invalid_grant"
-}
-~~~
+# Resource Server Behavior
 
-## Access Token Structure and Claims
+Resource Servers MUST validate access tokens and their claims prior to granting access to protected resources. They SHOULD log all access attempts to support auditing and security.
 
-The Access Token SHOULD be a JWT Profile for OAuth 2.0 Access Tokens {{RFC9068}}. It SHOULD carry claims that explicitly document the delegation chain.
+Specifically, Resource Servers MUST:
 
-In addition to standard JWT claims (e.g., iss, aud, exp, iat, jti), an Access Token issued via this flow MUST contain the following claims:
+* Validate that the access token is issued by a trusted Authorization Server and remains valid.
+* Verify that the token scopes authorize the requested resource access.
 
-act:
-: REQUIRED. Actor - represents the party acting on behalf of the subject (Section 4.1 of {{RFC8693}}). In an Access Token issued via this flow, this claim MUST contain a JSON object with at least the following member:
-  * sub: REQUIRED. The unique identifier of the actor that is acting on behalf of the user.
-  * Additional members MAY be included in the act claim.
+If the access token is missing, invalid, or insufficient for the requested operation, the Resource Server MUST respond with an appropriate error, typically one of: HTTP 400 (Bad Request), HTTP 401 (Unauthorized), or HTTP 403 (Forbidden), and include a WWW-Authenticate header describing the error.
 
-Example Decoded JWT Payload:
+It is RECOMMENDED that Resource Servers:
 
-~~~
-{
-  "iss": "https://authorization-server.com/oauth2/token",
-  "aud": "resource_server",
-  "sub": "user-456",
-  "azp": "s6BhdRkqt3",
-  "scope": "read:email write:calendar",
-  "exp": 1746009896,
-  "iat": 1746006296,
-  "jti": "unique-token-id",
-  "act": {
-    "sub": "actor-finance-v1"
-  },
-  "aut": "APPLICATION_USER"
-}
-~~~
+* Log relevant token claims and request details to ensure traceability and auditability.
+* Use entity-describing claims (e.g., client_entity_type, sub_entity_type, client_parent, sub_parent) to make authorization decisions regarding Agent actions.
 
-Resource Servers consuming this token can inspect the `sub` claim to identify the user and the act.sub claim to identify the specific actor that is performing the action. This provides a clear and auditable delegation path.
+Resource Servers MAY apply additional protections such as rate limiting or IP allowlisting to reduce abuse risks from agents.
 
-## Resource Server Challenge
+# Incremental Authorization
 
-The authorization flow is often triggered by a resource server challenge, such as an HTTP 401 (Unauthorized) or 403 (Forbidden) response, indicating a missing, invalid, or insufficient access token. This prompts the client to initiate the authorization process to obtain user consent and a valid token.
+Incremental authorization enables Agents to request only the permissions required for a specific task, deferring the acquisition of additional scopes until they are needed. This strategy reduces the risk of over-privileged access and aligns access token scopes with real-time operational context.
 
-When the client, prompted by an actor or speculatively, requests a protected resource, it includes an access token in the Authorization header if available. If the token is invalid or lacks required scopes or delegation claims, the resource server returns a challenge with a WWW-Authenticate header (e.g., error="invalid_token" or error="insufficient_scope"). The client then redirects the user's user-agent to the authorization server's authorization endpoint to obtain an authorization code.
+Agents can dynamically determine the necessary permissions by relying on [Protected Resource Metadata] as defined in OAuth 2.0 Protected Resource Metadata {{RFC8414}} and responding to WWW-Authenticate challenges issued by Resource Servers. When a token is insufficient—due to missing scopes or delegation context—the Resource Server challenges the Agent (e.g., error="insufficient_scope"), prompting a subsequent authorization request to acquire the necessary access.
 
-~~~
-GET /some/protected/resource HTTP/1.1
-Host: resource-server.com
-Authorization: Bearer <existing_access_token_if_any>
-~~~
-
-### Resource Server Processing
-
-Upon receiving the request, the Resource Server MUST validate the Access Token (if provided). This validation includes:
-
-1. Ensuring the token is present if required.
-
-2. Verifying the token's signature, issuer, and audience.
-
-3. Checking if the token is expired or revoked.
-
-4. Confirming the token contains the necessary scopes for the requested action.
-
-5. If the resource requires action on behalf of a specific Actor, verifying the token contains the appropriate delegation claims (e.g., an act claim) for that Actor.
-
-If the Access Token is missing, invalid, or insufficient for the requested action, the Resource Server MUST return an error response, typically an HTTP 400 (Bad Request), HTTP 401 (Unauthorized) or HTTP 403 (Forbidden), including a WWW-Authenticate header.
-
-### The WWW-Authenticate Response Header Field
-
-The Resource Server MUST include a WWW-Authenticate header field in the response to indicate the reason for the challenge. This header field MUST include the error code and other relevant information.
-
-Example:
-
-~~~
-HTTP/1.1 403 Forbidden
-WWW-Authenticate: Bearer error="insufficient_scope", error_description="The access token does not have the required scope(s)", required_scope="scope1 scope2"
-Content-Type: application/json;charset=UTF-8
-
-{
-  "error": "insufficient_scope",
-  "error_description": "The access token does not have the required scope(s)",
-  "required_scope": "scope1 scope2"
-}
-~~~
+Where supported, Authorization Servers MAY employ a CIBA-style (Client-Initiated Backchannel Authentication) authorization flow to facilitate end-user consent. This is particularly useful in non-interactive or delegated scenarios involving AI agents.
 
 # Security Considerations
 
-Actor Authentication:
-: The security of this flow relies heavily on the Authorization Server's ability to securely authenticate the actor during the Token Request using the Actor Token. The method by which actors obtain and secure their Actor Tokens is critical and outside the scope of this specification, but MUST be implemented securely.
+Token Integrity and Transport Security:
+: Access Tokens issued to Agents MUST be transmitted securely using HTTPS, as per {{RFC6749}}, to protect against token interception. Tokens MUST be cryptographically signed (e.g., as JWTs per {{RFC9068}}) and validated by Resource Servers to ensure their integrity and authenticity.
 
-Proof Key for Code Exchange (PKCE):
-: PKCE {{RFC7636}} is REQUIRED to prevent authorization code interception attacks, especially relevant if the client (and thus the actor receiving the code) is a public client or runs in an environment where the redirect URI cannot be strictly protected.
+Scope Minimization and Principle of Least Privilege:
+: The scopes or authorization_details {{RFC9396}} granted to Agents MUST be restricted to the minimum required for the Agent’s intended functionality. This mitigates the impact of token leakage or Agent compromise.
 
-Single-Use and Short-Lived Authorization Codes:
-: Authorization Codes MUST be single-use and have a short expiration time to minimize the window for compromise.
+Token Revocation and Expiration:
+: Access Tokens MUST have bounded lifetimes, and Authorization Servers MUST offer mechanisms to revoke tokens (e.g., via token revocation endpoint as per {{RFC7009}}). This is especially useful when an Agent is suspected to be compromised or misbehaving.
 
-Binding Code to Actor and Client:
-: The Authorization Server MUST bind the Authorization Code to the specific user, client (client_id), and requested actor (requested_actor) during issuance and verify this binding during the Token Request.
+Delegation Risks:
+: Authorization Servers and Resource Servers SHOULD validate delegation, ensuring that agents only act within the bounds of their delegated authority. This includes validating the act claim and ensuring that the agent has the necessary permissions to perform the requested actions on behalf of the user or another agent.
 
-Clear User Consent:
-: The consent screen presented to the user SHOULD clearly identify the actor and the requested scopes to ensure the user understands exactly what authority they are delegating and to whom.
+PKCE Enforcement for Public Clients:
+: All Agents registered as Public Clients MUST use Proof Key for Code Exchange (PKCE) {{RFC7636}} to protect against code interception. Confidential Clients SHOULD use PKCE when redirect URIs cannot be strongly protected, such as in native or embedded environments.
 
-Auditability:
-: The claims in the Access Token (sub, act) provide essential information for auditing actions performed using the token, clearly showing who (user) authorized the action, which application (client) facilitated it, and which entity (actor) performed it.
+User Consent Clarity and Management:
+: The Authorization Server SHOULD clearly indicate the identity of the acting Agent and the requested permissions (scopes or authorization_details) during consent prompts. It MUST provide end-users with management interfaces to view, audit, and revoke consent previously granted to Agents.
 
- 
+Auditability and Accountability:
+: The claims in the access token provide essential information for auditing actions performed using the token, clearly showing who (sub) authorized the action, which application (client) facilitated it and performed the action. Resource servers MUST log access requests made by agents, including the Agent identity, subject, entity-describing information, and actions performed. These logs enable traceability of who authorized what action, by which Agent, and on whose behalf. Logging MUST follow applicable privacy and compliance guidelines.
+
+# IANA Considerations  
+
+This document requests registration of the following claims in the JSON Web Token (JWT) Claims registry, established by {{RFC7519}}, in the "JSON Web Token Claims" registry located at https://www.iana.org/assignments/jwt:
+
+* Claim Name: "sub_entity_type"
+* Claim Description: Identifies the type of subject entity (e.g., "user", "agent", "app").
+* Change Controller: IESG
+* Specification Document(s): Section 4 of this document
+
+* Claim Name: "client_entity_type"
+* Claim Description: Identifies the type of client entity (e.g., "agent", "app").
+* Change Controller: IESG
+* Specification Document(s): Section 4 of this document
+
+* Claim Name: "sub_parent"
+* Claim Description: Identifies the parent entity of the subject, if applicable.
+* Change Controller: IESG
+* Specification Document(s): Section 4 of this document
+
+* Claim Name: "client_parent"
+* Claim Description: Identifies the parent application or entity responsible for the client.
+* Change Controller: IESG
+* Specification Document(s): Section 4 of this document
+
+Note: These claims are intended to support agent identity, delegation semantics, and traceability in OAuth 2.0-based authorization scenarios involving AI agents and other autonomous clients. Claims are OPTIONAL unless explicitly required by the Authorization Server.
+
 --- back
+
+# Appendix A. Example Access Tokens for Agent Scenarios
+
+This appendix provides example access tokens issued to AI agents under three different usage scenarios. Each example demonstrates how claims such as "sub", "client_id", and delegation-related claims are structured to reflect the relationship between the agent, its parent, and any subject it represents.
+
+These examples are illustrative and omit optional claims such as exp, iat, iss, and jti for brevity.
+
+## A.1. Autonomous AI Agents
+
+In this scenario, an autonomous AI agent acts independently without any user or delegator. The agent obtains a token via the Client Credentials Grant. The token includes claims identifying the agent as both the subject (sub) and the client (client_id), along with its parent application.
+
+~~~
+{ 
+  "sub": "agent-xyz-instance-id-456", 
+  "sub_entity_type": "agent", 
+  "sub_parent": "agent-xyz-app-789", 
+  "aud": "https://api.example.com", 
+  "scope": "read:email write:calendar", 
+  "client_id": "agent-xyz-instance-id-456", 
+  "client_entity_type": "agent", 
+  "client_parent": "agent-xyz-app-789" 
+} 
+~~~
+
+## A.2. Delegated Action on Behalf of Users
+
+In this scenario, an agent performs actions on behalf of a user. It obtains a token using the Authorization Code Grant. The token reflects the user as the subject (sub) and the agent as the client (client_id).
+
+~~~
+{ 
+  "sub": "user-id-123", 
+  "sub_entity_type": "user", 
+  "aud": "https://api.example.com", 
+  "scope": "read:email write:calendar", 
+  "client_id": "agent-xyz-instance-id-123", 
+  "client_entity_type": "agent", 
+  "client_parent": "agent-xyz-app-1610" 
+} 
+~~~
+
+## Delegated Action Between Agents
+
+This example illustrates a scenario where one agent delegates a task to another agent using the OAuth 2.0 Token Exchange. The client_id claim indicates the current actor. The act claim is used to encode a delegation chain. The top-level sub represents the user on whose behalf the action is ultimately being taken.
+
+~~~
+{ 
+  "sub": "user-id-123", 
+  "sub_entity_type": "user", 
+  "aud": "https://api.example.com", 
+  "scope": "read:email write:calendar", 
+  "client_id": "agent-xyz-instance-id-456", 
+  "client_entity_type": "agent", 
+  "client_parent": "agent-xyz-app-789", 
+  "act": { 
+    "sub": "agent-xyz-instance-id-456", 
+    "sub_entity_type": "agent", 
+    "sub_parent": "agent-xyz-app-789", 
+    "act": { 
+      "sub": "agent-abc-instance-id-123", 
+      "sub_entity_type": "agent", 
+      "sub_parent": "agent-abc-app-1610" 
+    } 
+  } 
+}
+~~~
