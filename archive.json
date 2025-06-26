@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2025-06-24T00:18:58.610693+00:00",
+  "timestamp": "2025-06-26T00:19:02.640007+00:00",
   "repo": "shashimalcse/oauth-ai-agents",
   "labels": [
     {
@@ -219,6 +219,101 @@
           "createdAt": "2025-05-08T10:00:51Z",
           "updatedAt": "2025-05-08T10:00:51Z",
           "comments": []
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "id": "PR_kwDOOjSdX86bw887",
+      "title": "Proposal for OAuth 2.0 for AI Agents",
+      "url": "https://github.com/shashimalcse/oauth-ai-agents/pull/3",
+      "state": "OPEN",
+      "author": "Sreyanth",
+      "authorAssociation": "NONE",
+      "assignees": [],
+      "labels": [],
+      "body": "This PR proposes an updated approach for using OAuth 2.0 for AI agents, emphasizing simplicity, clarity, and security. It extends existing OAuth 2.0 flows and claims to better support scenarios where AI agents act autonomously, on behalf of users, or delegate on behalf of other agents.\r\n\r\nWe welcome feedback and discussion to further refine this model and encourage collaboration on the future evolution of OAuth for AI agents.",
+      "createdAt": "2025-06-24T02:51:04Z",
+      "updatedAt": "2025-06-25T14:15:24Z",
+      "baseRepository": "shashimalcse/oauth-ai-agents",
+      "baseRefName": "main",
+      "baseRefOid": "ab096969e3e6e6c013770f72c22434427bf8b323",
+      "headRepository": "Sreyanth/oauth-ai-agents",
+      "headRefName": "main",
+      "headRefOid": "6ad7cf7f9b0a39f93b7b1c4ca8f6561530283364",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [
+        {
+          "author": "shashimalcse",
+          "authorAssociation": "OWNER",
+          "body": "@Sreyanth Thanks for raising the PR. To get a better understanding of the changes you proposed, could you please provide a component or flow diagram illustrating how the systems and authorization flow works?",
+          "createdAt": "2025-06-24T10:00:35Z",
+          "updatedAt": "2025-06-24T10:00:35Z"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "PRR_kwDOOjSdX86wVEk3",
+          "commit": {
+            "abbreviatedOid": "6ad7cf7"
+          },
+          "author": "PieterKas",
+          "authorAssociation": "NONE",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2025-06-25T14:05:31Z",
+          "updatedAt": "2025-06-25T14:05:31Z",
+          "comments": [
+            {
+              "originalPosition": 250,
+              "body": "Terminology suggestion - perhaps use \"sender constrained tokens\" to avoid association with MTLS token binding as the only mechanism.",
+              "createdAt": "2025-06-25T14:05:31Z",
+              "updatedAt": "2025-06-25T14:05:31Z"
+            }
+          ]
+        },
+        {
+          "id": "PRR_kwDOOjSdX86wVI_H",
+          "commit": {
+            "abbreviatedOid": "6ad7cf7"
+          },
+          "author": "PieterKas",
+          "authorAssociation": "NONE",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2025-06-25T14:09:39Z",
+          "updatedAt": "2025-06-25T14:09:40Z",
+          "comments": [
+            {
+              "originalPosition": 238,
+              "body": "+1 on using CIBA for out-of-band consent. \r\n\r\nThere should be some security considerations on consent phishing attacks and mitigating them (perhaps citing the cross device security BCP - https://www.ietf.org/archive/id/draft-ietf-oauth-cross-device-security-09.html)",
+              "createdAt": "2025-06-25T14:09:40Z",
+              "updatedAt": "2025-06-25T14:09:40Z"
+            }
+          ]
+        },
+        {
+          "id": "PRR_kwDOOjSdX86wVQSV",
+          "commit": {
+            "abbreviatedOid": "6ad7cf7"
+          },
+          "author": "PieterKas",
+          "authorAssociation": "NONE",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2025-06-25T14:15:23Z",
+          "updatedAt": "2025-06-25T14:15:24Z",
+          "comments": [
+            {
+              "originalPosition": 211,
+              "body": "Consider language to emphasisethat this ccoonsent may be obtained out-of-context and precautions should be taken against consent phishing attacks (ensuing the consent request is originating from a legitimate agent, and that there is enough information for the user to understand what they are consenting to.\r\n\r\nIn terms of terminology, it has been pointed out to me in the past that \"consent\"\" is a legal term, what we are really doing in the scenarios is collecting permission. Tamoto/Tamatoe, but other reviewers will trip up on it.",
+              "createdAt": "2025-06-25T14:15:23Z",
+              "updatedAt": "2025-06-25T14:15:24Z"
+            }
+          ]
         }
       ]
     }
