@@ -2,14 +2,14 @@
 
 
 
-Network Working Group                                     T. S. Senarath
+Web Authorization Protocol                                T. S. Senarath
 Internet-Draft                                            A. Dissanayaka
 Intended status: Informational                                      WSO2
-Expires: 9 November 2025                                      8 May 2025
+Expires: 15 January 2026                                    14 July 2025
 
 
    OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents
-               draft-oauth-ai-agents-on-behalf-of-user-01
+               draft-oauth-ai-agents-on-behalf-of-user-02
 
 Abstract
 
@@ -27,6 +27,22 @@ Abstract
    document the delegation chain from the user to the agent via a client
    application.
 
+About This Document
+
+   This note is to be removed before publishing as an RFC.
+
+   Status information for this document may be found at
+   https://datatracker.ietf.org/doc/draft-oauth-ai-agents-on-behalf-of-
+   user/.
+
+   Discussion of this document takes place on the Web Authorization
+   Protocol Working Group mailing list (mailto:oauth@ietf.org), which is
+   archived at https://mailarchive.ietf.org/arch/browse/oauth/.
+   Subscribe at https://www.ietf.org/mailman/listinfo/oauth/.
+
+   Source for this draft and an issue tracker can be found at
+   https://github.com/shashimalcse/oauth-ai-agents.
+
 Status of This Memo
 
    This Internet-Draft is submitted in full conformance with the
@@ -42,7 +58,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 9 November 2025.
+   This Internet-Draft will expire on 15 January 2026.
 
 Copyright Notice
 
