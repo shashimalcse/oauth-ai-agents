@@ -3,19 +3,25 @@ title: "OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents"
 abbrev: "OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents"
 category: info
 
-docname: draft-oauth-ai-agents-on-behalf-of-user-01
+docname: draft-oauth-ai-agents-on-behalf-of-user-02
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
 consensus: true
 v: 3
 area: "Security"
-workgroup: 
+workgroup: "Web Authorization Protocol"
 keyword:
  - ai-agents
  - authorization
  - actor
  - obo
+venue:
+  group: "Web Authorization Protocol"
+  type: "Working Group"
+  mail: "oauth@ietf.org"
+  arch: "https://mailarchive.ietf.org/arch/browse/oauth/"
+  github: "shashimalcse/oauth-ai-agents"
 
 author:
  -
