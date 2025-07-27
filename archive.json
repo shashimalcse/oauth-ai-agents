@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2025-07-24T00:20:10.298852+00:00",
+  "timestamp": "2025-07-27T00:22:12.453109+00:00",
   "repo": "shashimalcse/oauth-ai-agents",
   "labels": [
     {
@@ -234,7 +234,7 @@
       "labels": [],
       "body": "This PR proposes an updated approach for using OAuth 2.0 for AI agents, emphasizing simplicity, clarity, and security. It extends existing OAuth 2.0 flows and claims to better support scenarios where AI agents act autonomously, on behalf of users, or delegate on behalf of other agents.\r\n\r\nWe welcome feedback and discussion to further refine this model and encourage collaboration on the future evolution of OAuth for AI agents.",
       "createdAt": "2025-06-24T02:51:04Z",
-      "updatedAt": "2025-06-25T14:15:24Z",
+      "updatedAt": "2025-07-24T16:37:01Z",
       "baseRepository": "shashimalcse/oauth-ai-agents",
       "baseRefName": "main",
       "baseRefOid": "ab096969e3e6e6c013770f72c22434427bf8b323",
@@ -252,6 +252,13 @@
           "body": "@Sreyanth Thanks for raising the PR. To get a better understanding of the changes you proposed, could you please provide a component or flow diagram illustrating how the systems and authorization flow works?",
           "createdAt": "2025-06-24T10:00:35Z",
           "updatedAt": "2025-06-24T10:00:35Z"
+        },
+        {
+          "author": "dasiths",
+          "authorAssociation": "NONE",
+          "body": "> @Sreyanth Thanks for raising the PR. To get a better understanding of the changes you proposed, could you please provide a component or flow diagram illustrating how the systems and authorization flow works?\r\n\r\n@Sreyanth and @shashimalcse I've created a PR into the branch with the component and sequence diagram. Let me know if you need any changes done as I've made it a bit verbose. https://github.com/Sreyanth/oauth-ai-agents/pull/1",
+          "createdAt": "2025-07-24T16:37:01Z",
+          "updatedAt": "2025-07-24T16:37:01Z"
         }
       ],
       "reviews": [
