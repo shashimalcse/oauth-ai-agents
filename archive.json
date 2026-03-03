@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-03-01T00:27:55.255401+00:00",
+  "timestamp": "2026-03-03T00:25:45.973025+00:00",
   "repo": "shashimalcse/oauth-ai-agents",
   "labels": [
     {
@@ -323,6 +323,32 @@
           ]
         }
       ]
+    },
+    {
+      "number": 5,
+      "id": "PR_kwDOOjSdX87HYnE2",
+      "title": "Add revised version of dynamic delegation standard",
+      "url": "https://github.com/shashimalcse/oauth-ai-agents/pull/5",
+      "state": "OPEN",
+      "author": "ayshsandu",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "Changes\r\n- introduce 3 initiation methods\r\n      - PAR, CIBA, Direct (Auth code)\r\n- Upfront actor_token validation\r\n- Intent Scope\r\n- Flow descriptions \r\n- Examples\r\n\r\nTODO\r\n- flow diagrams for CIBA, PAR\r\n- Cleanup descritions",
+      "createdAt": "2026-03-02T17:02:12Z",
+      "updatedAt": "2026-03-02T17:02:12Z",
+      "baseRepository": "shashimalcse/oauth-ai-agents",
+      "baseRefName": "main",
+      "baseRefOid": "44c85100abcf713850579f7d76133af16a368e48",
+      "headRepository": "ayshsandu/oauth-ai-agents",
+      "headRefName": "main",
+      "headRefOid": "416384a9377e386f343356b34930978376337bc8",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": []
     }
   ]
 }
