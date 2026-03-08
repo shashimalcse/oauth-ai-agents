@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-03-05T00:25:46.260892+00:00",
+  "timestamp": "2026-03-08T00:25:44.326292+00:00",
   "repo": "shashimalcse/oauth-ai-agents",
   "labels": [
     {
@@ -336,13 +336,13 @@
       "labels": [],
       "body": "Changes\r\n- introduce 3 initiation methods\r\n      - PAR, CIBA, Direct (Auth code)\r\n- Upfront actor_token validation\r\n- Intent Scope\r\n- Flow descriptions \r\n- Examples\r\n\r\nTODO\r\n- flow diagrams for CIBA, PAR\r\n- Cleanup descritions",
       "createdAt": "2026-03-02T17:02:12Z",
-      "updatedAt": "2026-03-04T08:01:26Z",
+      "updatedAt": "2026-03-06T11:43:34Z",
       "baseRepository": "shashimalcse/oauth-ai-agents",
       "baseRefName": "main",
       "baseRefOid": "44c85100abcf713850579f7d76133af16a368e48",
       "headRepository": "ayshsandu/oauth-ai-agents",
       "headRefName": "main",
-      "headRefOid": "77be4ca090a3b1c7cace32e2a42e315ca490a5b0",
+      "headRefOid": "6f8c1cfb8d7ff13d4277fdcd1c6da772ac03a9aa",
       "closedAt": null,
       "mergedAt": null,
       "mergedBy": null,
