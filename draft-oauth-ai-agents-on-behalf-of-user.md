@@ -3,7 +3,7 @@ title: "OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents"
 abbrev: "OAuth 2.0 Extension: On-Behalf-Of User Authorization for AI Agents"
 category: info
 
-docname: draft-oauth-ai-agents-on-behalf-of-user-02
+docname: draft-oauth-ai-agents-on-behalf-of-user-03
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
@@ -28,10 +28,13 @@ author:
     fullname: Thilina Shashimal Senarath
     organization: WSO2
     email: thilinasenarath97@gmail.com
- -  
+ -
     fullname: Ayesha Dissanayaka
     organization: WSO2
     email: ayshsandu@gmail.com
+ -
+    fullname: Joseba Fuentes
+    email: info@josebafuentes.com
 
 normative:
   RFC2119:
@@ -41,6 +44,20 @@ normative:
   RFC8174:
   RFC8693:
   RFC9068:
+
+informative:
+  SOLO-OBO:
+    title: "Inbound Auth for Agentcore With Agentgateway"
+    author:
+      name: Christian Posta
+      org: Solo.io
+    date: 2026-03-04
+    target: https://www.solo.io/blog/inbound-auth-for-agentcore-with-agentgateway
+  ENTRA-AGENT:
+    title: "Token claims reference for agent IDs"
+    author:
+      org: Microsoft
+    target: https://learn.microsoft.com/en-us/entra/agent-id/identity-platform/agent-token-claims
 
 --- abstract
 
@@ -85,7 +102,7 @@ Authorization Server:
 : The server that issues access tokens to the client and actor after successfully authenticating a resource owner and obtaining authorization.
 
 Resource Server:
-: The server hosting the protected resources, capable of accepting and validating access tokens. In context of AI applications, resource server can be a model context protocol (MCP) server, another agent or genaric protected resource.
+: The server hosting the protected resources, capable of accepting and validating access tokens. In context of AI applications, resource server can be a model context protocol (MCP) server, another agent or generic protected resource.
 
 Authorization Code:
 : A temporary, single-use code issued by the authorization server to the client's redirect URI after the user has authenticated and granted consent for a specific actor to act on their behalf.
@@ -106,13 +123,13 @@ This extension defines a flow where a client application facilitates user consen
 
 2. The Client attempts the action by making a request to the Resource Server
 
-3. If access is unsuccessful (e.g., HTTP 401 Unauthorized due to an invalid/missing token, or HTTP 403 Forbidden due to insufficient scope), Resource Server challenges the Client. 
+3. If access is unsuccessful (e.g., HTTP 401 Unauthorized due to an invalid/missing token, or HTTP 403 Forbidden due to insufficient scope), Resource Server challenges the Client.
 
-4.The Client initiates the authorization flow by redirecting the User's User-Agent to the Authorization Server's authorization endpoint. This request includes a requested_actor parameter (matching the ActorID).
+4. The Client initiates the authorization flow by redirecting the User's User-Agent to the Authorization Server's authorization endpoint. This request includes a requested_actor parameter (matching the ActorID).
 
 5. The Authorization Server authenticates the User (if not already authenticated) and presents a consent screen detailing the Client, the requested_actor, and the requested scopes.
 
-6. Upon User consent, the Authorization Server issues a short-lived Authorization Code (tied to the User, Client, and consented Actor) and redirects the User-Agent back to the Client's redirect_uri. 
+6. Upon User consent, the Authorization Server issues a short-lived Authorization Code (tied to the User, Client, and consented Actor) and redirects the User-Agent back to the Client's redirect_uri.
 
 7. The Client receives the Authorization Code via the User-Agent redirect.
 
@@ -124,9 +141,10 @@ This extension defines a flow where a client application facilitates user consen
 
 11. The Client retries the action or performs a new action on the Resource Server using this newly obtained Access Token.
 
-12. If access is successful (either initially or on retry): The Resource Server validates the Access Token (including the delegation claims like act) and processes the request, returning the resource or confirming the action. 
+12. If access is successful (either initially or on retry): The Resource Server validates the Access Token (including the delegation claims like act) and processes the request, returning the resource or confirming the action.
 
 The Client may then pass the result to the Actor.
+
 ## Sequence Diagram
 
 ~~~ ascii-art
@@ -134,7 +152,7 @@ The Client may then pass the result to the Actor.
     | User-Agent|   | Client |   | Act as Actor|  | Authorization Server|   | Resource Server |
     +-----------+   +--------+    +-----------+   +---------------------+    +---------------+
           |             |              |                   |                       |
-          |     (1) Signals need to act on User's behalf   |                       |                       
+          |     (1) Signals need to act on User's behalf   |                       |
           |             |  by passing ActorID              |                       |
           |             |<-------------|                   |
           |             |              |                   |                       |
@@ -145,9 +163,9 @@ The Client may then pass the result to the Actor.
     |     |             |              |                   |                       |         |
     |------------------------------------[If Unauthorized]-----------------------------------|
     |     |             |              |                   |                       |         |
-    |     |             |              |             +---------------------------------+     |              
-    |     |             |              |             | Token validation is failed      |     |              
-    |     |             |              |             +---------------------------------+     |             
+    |     |             |              |             +---------------------------------+     |
+    |     |             |              |             | Token validation is failed      |     |
+    |     |             |              |             +---------------------------------+     |
     |     |             |              |                   |                       |         |
     |     |             |  (3) CHALLENGE: HTTP 401, WWW-Authenticate:              |         |
     |     |             |           Bearer error="invalid_token"                   |         |
@@ -165,9 +183,9 @@ The Client may then pass the result to the Actor.
     |     |             |              |                   |                       |         |
     |------------------------------------[If Forbidden]--------------------------------------|
     |     |             |              |                   |                       |         |
-    |     |             |              |            +---------------------------------+      |             
-    |     |             |              |            |   Insufficient Authorization    |      |             
-    |     |             |              |            +---------------------------------+      |           
+    |     |             |              |            +---------------------------------+      |
+    |     |             |              |            |   Insufficient Authorization    |      |
+    |     |             |              |            +---------------------------------+      |
     |     |             |              |                   |                       |         |
     |     |               (7) CHALLENGE: HTTP 403, WWW-Authenticate:               |         |
     |     |       Bearer error="insufficient_scope" required_scope="scope1 scope2" |         |
@@ -205,7 +223,6 @@ The Client may then pass the result to the Actor.
     |     |             |<---------------------------------------------------------|         |
     \----------------------------------------------------------------------------------------/
 ~~~
-
 
 The steps in the sequence diagram are as follows:
 
@@ -342,7 +359,7 @@ Upon receiving the token request, the Authorization Server MUST perform the foll
 
 2. The Authorization Server MUST verify that the actor token is valid, not expired.
 
-2. Verify that the authenticated actor identity (obtained from the Actor Token's sub claim) matches the requested_actor value that the user consented to during the initial Authorization Request and which is associated with the code.
+3. Verify that the authenticated actor identity (obtained from the Actor Token's sub claim) matches the requested_actor value that the user consented to during the initial Authorization Request and which is associated with the code.
 
 If all validations pass, the Authorization Server issues an Access Token. If any validation fails, the Authorization Server returns an Error Response.
 
@@ -415,6 +432,117 @@ Example Decoded JWT Payload:
 
 Resource Servers consuming this token can inspect the `sub` claim to identify the user and the act.sub claim to identify the specific actor that is performing the action. This provides a clear and auditable delegation path.
 
+## Scope Reduction and Privilege Attenuation for Delegated Actor Tokens {#scope-reduction}
+
+### Motivation
+
+The authorization flow defined in this specification enables a user to
+delegate access to an actor for a set of consented scopes. However, in
+deployment environments subject to strict access control requirements -
+such as regulated financial services, healthcare, or government systems -
+it is insufficient to rely solely on user consent to determine the
+actor's effective permissions.
+
+In these environments, an actor SHOULD never be able to exercise
+permissions beyond its own pre-defined trust boundary, regardless of
+what the user has consented to. A common deployment requirement is that
+the effective scope of a delegated access token be the intersection of
+the user-consented scope and the maximum scope permitted for the actor,
+where the user-consented scope already reflects the standard OAuth 2.0
+scope reduction defined in Section 3.3 of {{RFC6749}}:
+
+~~~
+effective_scope = consented_scope INTERSECT actor_max_allowed_scope
+~~~
+
+This is distinct from simply requesting a narrower scope at the
+authorization endpoint: it requires the Authorization Server to enforce
+an actor-specific ceiling that cannot be exceeded even if the client
+requests or the user consents to broader access.
+
+Evidence of this deployment need can be seen in existing implementations.
+Solo.io's agentgateway {{SOLO-OBO}} introduces custom token exchange
+mechanisms to represent delegation context and enforce policy boundaries
+when fronting AWS AgentCore deployments. Similarly, Microsoft Entra Agent
+ID {{ENTRA-AGENT}} has introduced proprietary claims to represent
+agent-user relationships in tokens. Both cases illustrate that the
+industry is addressing this need through vendor-specific extensions
+rather than a common standard.
+
+### The `max_actor_scope` Parameter
+
+This document proposes an optional `max_actor_scope` parameter
+for the authorization request (Section 4.1):
+
+max_actor_scope:
+: OPTIONAL. A space-separated list of scopes representing the maximum
+  permissions the actor is allowed to exercise, independent of the
+  user's consented scopes. The Authorization Server MUST limit the
+  resulting scope such that it does not exceed the intersection of
+  the requested `scope`, the user-consented scope, and `max_actor_scope`.
+  If `max_actor_scope` is not provided, no additional ceiling beyond
+  standard scope processing applies.
+
+Example:
+
+~~~
+GET /authorize?
+  response_type=code&
+  client_id=s6BhdRkqt3&
+  requested_actor=agent-docsearch-v1&
+  scope=read:accounts%20read:documents%20write:transfers&
+  max_actor_scope=read:documents&
+  code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&
+  code_challenge_method=S256&
+  state=af0ifjsldkj HTTP/1.1
+Host: authorization-server.com
+~~~
+
+In this example, even though the user may consent to `read:accounts`,
+`read:documents`, and `write:transfers`, the access token issued to
+the actor will only contain `read:documents` because that is the
+intersection with `max_actor_scope`.
+
+### Authorization Server Processing
+
+When `max_actor_scope` is present, the Authorization Server:
+
+1. MUST validate `max_actor_scope` against the scopes registered for
+   the `requested_actor`, if the Authorization Server maintains
+   per-actor scope registrations.
+2. MUST display the effective (attenuated) scope to the user on
+   the consent screen, not the originally requested scope.
+3. MUST issue the access token with `scope` equal to:
+   the intersection of `consented_scope` and `max_actor_scope`,
+   where `consented_scope` already reflects the standard OAuth 2.0
+   scope reduction defined in Section 3.3 of {{RFC6749}}.
+4. SHOULD include the original `requested_scope` as a separate
+   informational claim if the token format supports it, to aid
+   auditability.
+
+### Resource Server Considerations
+
+Resource Servers consuming tokens issued via this flow:
+
+- MUST NOT assume the actor inherits the full permissions of the
+  subject (`sub`). The `act.sub` claim identifies the actor but
+  does not imply permission inheritance.
+- SHOULD apply attribute-based or role-based access control
+  policies keyed on both `sub` and `act.sub` independently.
+- MAY use the `scope` claim in the access token as the authoritative
+  effective permission set, after validation of the delegation chain
+  via the `act` claim.
+
+### Relationship to RFC 8693 Token Exchange
+
+The `max_actor_scope` parameter defined here is complementary to
+the `scope` parameter in OAuth 2.0 Token Exchange {{RFC8693}}.
+While {{RFC8693}} allows scope reduction at token exchange time
+(server-to-server), `max_actor_scope` enables scope attenuation
+at the point of user consent in the front channel, making the
+attenuation explicit and auditable from the beginning of the
+delegation chain.
+
 ## Resource Server Challenge
 
 The authorization flow is often triggered by a resource server challenge, such as an HTTP 401 (Unauthorized) or 403 (Forbidden) response, indicating a missing, invalid, or insufficient access token. This prompts the client to initiate the authorization process to obtain user consent and a valid token.
@@ -451,7 +579,9 @@ Example:
 
 ~~~
 HTTP/1.1 403 Forbidden
-WWW-Authenticate: Bearer error="insufficient_scope", error_description="The access token does not have the required scope(s)", required_scope="scope1 scope2"
+WWW-Authenticate: Bearer error="insufficient_scope",
+  error_description="The access token does not have the required scope(s)",
+  required_scope="scope1 scope2"
 Content-Type: application/json;charset=UTF-8
 
 {
@@ -481,5 +611,4 @@ Clear User Consent:
 Auditability:
 : The claims in the Access Token (sub, act) provide essential information for auditing actions performed using the token, clearly showing who (user) authorized the action, which application (client) facilitated it, and which entity (actor) performed it.
 
- 
 --- back
