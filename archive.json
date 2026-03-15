@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-03-12T00:21:27.498322+00:00",
+  "timestamp": "2026-03-15T00:29:24.241554+00:00",
   "repo": "shashimalcse/oauth-ai-agents",
   "labels": [
     {
@@ -370,6 +370,32 @@
           ]
         }
       ]
+    },
+    {
+      "number": 6,
+      "id": "PR_kwDOOjSdX87KMUEp",
+      "title": "Add Section 4.4: Scope Reduction and Privilege Attenuation for Delega\u2026",
+      "url": "https://github.com/shashimalcse/oauth-ai-agents/pull/6",
+      "state": "OPEN",
+      "author": "Tlaloc-Es",
+      "authorAssociation": "NONE",
+      "assignees": [],
+      "labels": [],
+      "body": "Hi @shashimalcse and @ayshsandu,\r\n\r\nWhile implementing this draft in a regulated financial services environment\r\n(using AWS AgentCore as the agent runtime behind an agentic API gateway),\r\nI encountered a deployment gap related to constraining actor permissions.\r\n\r\nThis PR proposes a new section:\r\n\r\nSection 4.4 \u2014 Scope Reduction and Privilege Attenuation for Delegated Actor Tokens\r\n\r\nThe section introduces an optional `max_actor_scope` parameter that allows\r\nthe Authorization Server to enforce a ceiling on the actor\u2019s effective\r\npermissions, ensuring that the resulting scope cannot exceed the actor\u2019s\r\npre-defined trust boundary.\r\n\r\nThe effective scope model proposed is:\r\n\r\neffective_scope = consented_scope INTERSECT actor_max_allowed_scope\r\n\r\nThis addresses a deployment requirement observed in regulated environments\r\nwhere agents must operate under strict least-privilege constraints.\r\n\r\nThe motivation section also references two existing implementations that\r\naddress this need through vendor-specific extensions:\r\n\r\n- Solo.io AgentGateway (custom RFC 8693 token exchange)\r\n- Microsoft Entra Agent ID (proprietary delegation claims)\r\n\r\nHappy to adjust wording or structure if this would fit better elsewhere\r\nin the draft.",
+      "createdAt": "2026-03-12T22:46:14Z",
+      "updatedAt": "2026-03-12T22:46:14Z",
+      "baseRepository": "shashimalcse/oauth-ai-agents",
+      "baseRefName": "main",
+      "baseRefOid": "44c85100abcf713850579f7d76133af16a368e48",
+      "headRepository": "Tlaloc-Es/oauth-ai-agents",
+      "headRefName": "main",
+      "headRefOid": "1bac9957b9aa6992a72d7f952655240f64268afe",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": []
     }
   ]
 }
